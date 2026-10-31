@@ -1,120 +1,93 @@
-# Obsidian Sample Plugin
+# Knowledge Base Assistant
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+Knowledge Base Assistant is an Obsidian desktop plugin for maintaining a structured knowledge base. It combines deterministic local checks and file operations with optional AI suggestions. All file changes require an explicit user confirmation.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## Features
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
+The plugin opens a four-tab knowledge base panel:
 
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open modal (simple)" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and outputs a Notice on click.
-- Registers a global interval which logs 'setInterval' to the console.
+- **Overview** — check or regenerate the knowledge-base index and open the configured folder.
+- **Rules** — edit `知识库规则.md` through structured settings, explanatory content, and the complete Markdown source. Invalid structured rules can still be saved as Markdown, while the most recent valid configuration remains active.
+- **AI organize** — manually analyze the current document by default, or switch to the current folder, for classification, summaries, related links, and proposed changes.
+- **Daily backfill** — review the day's raw material at the end of the day and run a manual weekly review for associations, conflicts, omissions, stale knowledge, and skill candidates.
 
-## First time developing plugins?
+## Installation and development
 
-Quick starting guide for new plugin devs:
+This project requires Node.js 18 or newer and npm.
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `src/main.ts` to `main.js`.
-- Make changes to `src/main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+```bash
+npm install
+npm run dev       # development watch build
+npm run build     # production build
+npm test
+npm run lint
+```
 
-## Releasing new releases
+The production bundle is generated as `main.js` at the repository root. Do not commit generated files or `node_modules/`.
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+## Desktop-only index operations
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+The Overview tab runs the configured Python index script from the active Vault root:
 
-## Adding your plugin to the community plugin list
+```bash
+python3 000ai知识库价值写作体系/系统/generate-index.py
+python3 000ai知识库价值写作体系/系统/generate-index.py --check
+```
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+The first command regenerates the index; the second only checks whether it is out of date. The plugin invokes Python with parameterized arguments and does not use shell interpolation. The Python executable and script path are configurable, but the script must remain inside the Vault. Because Obsidian mobile cannot launch this local process safely, index operations are available only on desktop.
 
-## How to use
-
-- Clone this repo.
-- Make sure your NodeJS is at least v18 (`node --version`).
-- `npm i` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
-
-## Knowledge base assistant
-
-This plugin provides a four-tab assistant for the configured knowledge base:
-
-- **Overview** checks or regenerates the index and opens the configured folder.
-- **Rules** edits `知识库规则.md` using the R1 settings/body/source editor. Invalid structured rules can be saved as Markdown, but the last valid activation remains effective until a valid configuration is saved.
-- **AI organize** analyzes the current document by default, or the current folder, for classification, summaries, relations, and confirmed changes.
-- **Daily backfill** reviews today’s raw material at the end of the day and provides a manual weekly review for associations, conflicts, omissions, stale knowledge, and skill candidates.
-
-### Desktop-only index operations
-
-Index operations run the configured Python executable with the configured script from the active Vault root. The defaults are:
+Default paths are:
 
 ```text
 Knowledge base: 000ai知识库价值写作体系
 Rules:         000ai知识库价值写作体系/系统/知识库规则.md
-Index script:  000ai知识库价值写作体系/系统/generate-index.py
+Index script: 000ai知识库价值写作体系/系统/generate-index.py
 Python:        /usr/bin/python3
 ```
 
-Because Obsidian mobile cannot safely launch a local Python process, these index operations require desktop Obsidian. The script path must remain inside the Vault.
+## Rules and migration
 
-### OpenAI-compatible setup and privacy
+`知识库规则.md` is the human-readable rule source and contains a marked YAML configuration block. The Rules tab edits that configuration through the form while preserving the explanatory Markdown. The complete-source editor can modify the whole document.
 
-Configure the API base URL, model, and API key in **Settings → Community plugins → Knowledge base assistant**. The key is stored only in the local plugin data store. AI requests are manual: opening, switching, or saving a note never sends content in the background.
+The plugin validates the configuration before activating it. If a document contains invalid structured rules, it remains saveable as Markdown, but the plugin continues using the most recent valid configuration and reports the validation error. Rule schema changes use `schemaVersion`; future migrations should preserve older rule documents where possible.
 
-Before every request the panel shows the exact selected files and content. The request is sent only after an explicit upload confirmation. AI responses are suggestions; accepted patch and move plans show a diff and are applied only after confirmation through the local safety checks. If a file changes after preview, the operation is rejected as stale. Operation history stores metadata only—timestamps, scope, rule version, status, and a user-facing message—not Vault content or raw AI responses.
+The deterministic rule engine handles checks and confirmed operations such as frontmatter fixes, template application, file moves, and index regeneration. Destructive deletion is denied by default.
 
-## Manually installing the plugin
+## OpenAI-compatible setup and privacy
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+Configure the API base URL, model, and API key in **Settings → Community plugins → Knowledge base assistant**. The API key is stored in the local plugin data store.
 
-## Improve code quality with eslint
+AI analysis is manual. Opening, switching, or saving a note never sends content automatically. Before each request, the panel shows the selected files and content scope; the request is sent only after explicit upload confirmation.
 
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code.
-- This project already has eslint preconfigured, you can invoke a check by running`npm run lint`
-- Together with a custom eslint [plugin](https://github.com/obsidianmd/eslint-plugin) for Obsidan specific code guidelines.
-- A GitHub action is preconfigured to automatically lint every commit on all branches.
+AI output is treated as suggestions, not authority. Proposed patches and moves are shown as diffs and are applied only after separate confirmation and local safety checks. If a file changes after analysis, the operation is rejected as stale. Operation history stores metadata such as timestamps, scope, rule version, status, and messages, but not Vault content or raw AI responses.
 
-## Funding URL
+## Manual installation
 
-You can include funding URLs where people who use your plugin can financially support it.
+Build the plugin, then copy these release files into your Vault:
 
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-	"fundingUrl": "https://buymeacoffee.com"
-}
+```text
+<Vault>/.obsidian/plugins/<plugin-id>/
+├── main.js
+├── manifest.json
+└── styles.css       # if present
 ```
 
-If you have multiple URLs, you can also do:
+Reload Obsidian and enable the plugin under **Settings → Community plugins**.
 
-```json
-{
-	"fundingUrl": {
-		"Buy Me a Coffee": "https://buymeacoffee.com",
-		"GitHub Sponsor": "https://github.com/sponsors",
-		"Patreon": "https://www.patreon.com/"
-	}
-}
-```
+## Release checklist
 
-## API Documentation
+For each release:
 
-See https://docs.obsidian.md
+1. Update the SemVer `version` and compatible `minAppVersion` in `manifest.json`.
+2. Add the version-to-minimum-app-version mapping to `versions.json`.
+3. Run `npm run build`, `npm test`, and `npm run lint`.
+4. Create a GitHub release whose tag exactly matches `manifest.json`'s version; do not add a leading `v`.
+5. Attach `manifest.json`, `main.js`, and `styles.css` (when present) as individual release assets.
+6. Follow the [Obsidian plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines) and community-plugin submission process when publishing or updating the catalog entry.
+
+The plugin ID is a stable public identifier. Do not change it after release.
+
+## Documentation
+
+- [Obsidian plugin documentation](https://docs.obsidian.md)
+- [Obsidian plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines)
