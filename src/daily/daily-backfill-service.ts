@@ -57,8 +57,12 @@ const weeklyReviewGuidance = `Review the selected week's knowledge for associati
 export class DailyBackfillService {
 	constructor(
 		private readonly vault: DailyBackfillVault,
-		private readonly options: DailyBackfillOptions,
+		private options: DailyBackfillOptions,
 	) {}
+
+	setRules(rules: KnowledgeRules, ruleGuidance: string): void {
+		this.options = { ...this.options, rules, ruleGuidance };
+	}
 
 	async listTodayChanges(now: Date, rootPath: string): Promise<DailyFile[]> {
 		const start = dayStart(now).getTime();

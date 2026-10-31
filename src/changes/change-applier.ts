@@ -31,19 +31,19 @@ function isDenied(plan: ChangePlan, policy: ActionPolicy): boolean {
 export class ChangeApplier {
 	constructor(private readonly vault: VaultMutationLike, private readonly options: ChangeApplierOptions = {}) {}
 
-	async apply(previews: readonly ChangePreview[]): Promise<ApplyResult[]> {
+	async apply(previews: readonly ChangePreview[], actionPolicy?: ActionPolicy): Promise<ApplyResult[]> {
 		const results: ApplyResult[] = [];
 		for (const preview of previews) {
-			results.push(await this.applyOne(preview));
+			results.push(await this.applyOne(preview, actionPolicy));
 		}
 		return results;
 	}
 
-	private async applyOne(preview: ChangePreview): Promise<ApplyResult> {
+	private async applyOne(preview: ChangePreview, actionPolicy?: ActionPolicy): Promise<ApplyResult> {
 		const { plan } = preview;
 		const resultTarget = preview.targetPath ?? preview.sourcePath ?? plan.target;
 		try {
-			if (isDenied(plan, this.options.actionPolicy ?? {})) {
+			if (isDenied(plan, actionPolicy ?? this.options.actionPolicy ?? {})) {
 				return { target: resultTarget, status: 'skipped', message: 'Action is denied by the active rules.' };
 			}
 			if (plan.kind !== 'patch' && plan.kind !== 'move') {

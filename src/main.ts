@@ -76,7 +76,7 @@ export default class KnowledgeBasePlugin extends Plugin {
 		const dailyService = new DailyBackfillService(vault, {
 			rootPath: this.settings.knowledgeBaseRoot,
 			rules: fallbackRules(),
-			ruleGuidance: '',
+			ruleGuidance: 'Follow the active knowledge-base rules.',
 		});
 		const mutationVault: VaultMutationLike = {
 			read: readPath,

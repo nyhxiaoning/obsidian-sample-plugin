@@ -5,7 +5,7 @@ import type { RuleStore } from '../../rules/rule-store';
 import { extractRuleBlock, replaceRuleBlock } from '../../rules/rule-document';
 import type { KnowledgeRules } from '../../rules/rule-schema';
 
-export interface RulesContext { app: App; plugin: KnowledgeBasePlugin; rootPath: string; effectiveRules: null; ruleStore: RuleStore; }
+export interface RulesContext { app: App; plugin: KnowledgeBasePlugin; rootPath: string; effectiveRules: import('../../rules/rule-schema').KnowledgeRules | null; ruleStore: RuleStore; }
 
 export function renderRulesTab(container: HTMLElement, context: RulesContext): void {
 	container.createEl('h3', { text: 'Rules (R1 editor)' });
@@ -30,9 +30,31 @@ async function loadRules(panes: Record<'settings' | 'body' | 'source', HTMLEleme
 	const source = panes.source.createEl('textarea', { cls: 'knowledge-base-source-editor' });
 	source.value = markdown;
 	const settings = panes.settings;
+	const status = settings.createEl('p', { text: '' });
+	const saveSource = async (): Promise<void> => {
+		const file = context.app.vault.getAbstractFileByPath(context.plugin.settings.rulesPath);
+		if (!file || !('extension' in file)) throw new Error('Rules document could not be found.');
+		await context.app.vault.modify(file as import('obsidian').TFile, source.value);
+		const nextResult = context.ruleStore.validateDocument(source.value);
+		if (!nextResult.valid) {
+			status.setText('Document saved, but the last effective rules remain active.');
+			new Notice('Rules saved; invalid configuration was not activated.');
+			return;
+		}
+		await context.ruleStore.activateValidRules(nextResult.rules, String(source.value.length));
+		status.setText('Rules saved and activated.');
+		new Notice('Rules saved and activated.');
+	};
 	if (!result.valid) {
 		settings.createEl('p', { text: 'Current document is invalid. The last effective rules remain active.' }).addClass('knowledge-base-error');
 		for (const error of result.errors) settings.createEl('p', { text: `${error.path}: ${error.message}` }).addClass('knowledge-base-error');
+		new Setting(settings).addButton((button) => button.setButtonText('Save source without activating').setCta().onClick(() => void runUi(status, saveSource)));
+		new Setting(settings).addButton((button) => button.setButtonText('Restore effective rules').onClick(() => void runUi(status, async () => {
+			const effective = await context.ruleStore.loadEffectiveRules();
+			if (!effective) throw new Error('No valid effective rules are stored.');
+			source.value = replaceRuleBlock(source.value, effective);
+			status.setText('Editor restored to the last effective rules. Save to activate.');
+		}))); 
 		return;
 	}
 	const rules = result.rules;
@@ -44,7 +66,7 @@ async function loadRules(panes: Record<'settings' | 'body' | 'source', HTMLEleme
 	const bodyEditor = body.createEl('textarea', { cls: 'knowledge-base-source-editor' });
 	bodyEditor.value = block ? `${markdown.slice(0, block.start)}${markdown.slice(block.end)}`.trim() : markdown;
 	const initialBody = bodyEditor.value;
-	const save = (buttonText: string, action: () => Promise<void>) => new Setting(settings).addButton((button) => button.setButtonText(buttonText).setCta().onClick(() => void action()));
+	const save = (buttonText: string, action: () => Promise<void>) => new Setting(settings).addButton((button) => button.setButtonText(buttonText).setCta().onClick(() => void runUi(status, action)));
 	save('Save and activate', async () => {
 		const editedSource = bodyEditor.value !== initialBody
 			? `${bodyEditor.value.trim()}\n\n${source.value.slice(block?.start ?? 0, block?.end ?? source.value.length)}`
@@ -54,6 +76,7 @@ async function loadRules(panes: Record<'settings' | 'body' | 'source', HTMLEleme
 		if (!file || !('extension' in file)) throw new Error('Rules document could not be found.');
 		await context.app.vault.modify(file as import('obsidian').TFile, next);
 		await context.ruleStore.activateValidRules(rules, String(next.length));
+		status.setText('Rules saved and activated.');
 		new Notice('Rules saved and activated.');
 	});
 	save('Restore effective rules', async () => {
@@ -62,4 +85,8 @@ async function loadRules(panes: Record<'settings' | 'body' | 'source', HTMLEleme
 		source.value = replaceRuleBlock(source.value, effective);
 		new Notice('Editor restored to the last effective rules. Save to activate.');
 	});
+}
+
+async function runUi(status: HTMLElement, action: () => Promise<void>): Promise<void> {
+	try { await action(); } catch (error) { const message = error instanceof Error ? error.message : String(error); status.setText(message); new Notice(message); }
 }

@@ -22,6 +22,19 @@ export interface RuleActivationState {
 	activatedAt: string;
 }
 
+export type OperationStatus = 'running' | 'succeeded' | 'failed' | 'cancelled';
+
+export interface OperationRecord {
+	id: string;
+	startedAt: number;
+	finishedAt?: number;
+	kind: string;
+	scope: string;
+	ruleVersion: number;
+	status: OperationStatus;
+	message: string;
+}
+
 export type IndexMode = 'check' | 'generate';
 
 export interface IndexResult {

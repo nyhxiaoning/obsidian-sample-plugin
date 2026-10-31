@@ -1,4 +1,4 @@
-import { RuleActivationState } from '../types';
+import { OperationRecord, RuleActivationState } from '../types';
 import type { KnowledgeRules } from './rule-schema';
 import { validateRules } from './rule-validator';
 import type { RuleValidationError } from './rule-validator';
@@ -38,7 +38,7 @@ export class RuleStore {
 		}
 
 		const current = await this.persistence.loadData();
-		const data = current !== null && typeof current === 'object' ? { ...current } : {};
+		const data: Record<string, unknown> = current !== null && typeof current === 'object' ? { ...current } : {};
 		const activation: RuleActivationState = {
 			rules: result.rules,
 			documentHash,
@@ -46,5 +46,22 @@ export class RuleStore {
 			activatedAt: new Date().toISOString(),
 		};
 		await this.persistence.saveData({ ...data, ruleActivation: activation });
+	}
+
+	async recordOperation(record: OperationRecord): Promise<void> {
+		const current = await this.persistence.loadData();
+		const data: Record<string, unknown> = current !== null && typeof current === 'object' ? { ...current } : {};
+		const operations: unknown[] = Array.isArray(data.operations) ? data.operations as unknown[] : [];
+		const metadata: OperationRecord = {
+			id: record.id,
+			startedAt: record.startedAt,
+			...(record.finishedAt === undefined ? {} : { finishedAt: record.finishedAt }),
+			kind: record.kind,
+			scope: record.scope,
+			ruleVersion: record.ruleVersion,
+			status: record.status,
+			message: record.message,
+		};
+		await this.persistence.saveData({ ...data, operations: [...operations, metadata].slice(-50) });
 	}
 }

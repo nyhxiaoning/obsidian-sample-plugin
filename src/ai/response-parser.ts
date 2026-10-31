@@ -9,6 +9,7 @@ export interface AiSuggestion {
 	proposedPath?: string;
 	relatedFiles?: string[];
 	change?: ChangePlan;
+	sourcePath?: string;
 }
 
 export interface AiParserOptions {
@@ -82,14 +83,29 @@ export function parseAiSuggestions(text: string, options: AiParserOptions): AiSu
 		if (files !== undefined) suggestion.relatedFiles = files;
 		if (suggestion.kind === 'change') {
 			if (suggestion.proposedPath === undefined) throw new Error('AI change suggestion requires proposedPath');
-			suggestion.change = {
-				kind: 'report',
-				target: suggestion.proposedPath,
-				reason: suggestion.detail,
-				risk: 'medium',
-				diff: `Proposed path: ${suggestion.proposedPath}`,
-				requiresConfirmation: true,
-			};
+			const operation = item.operation;
+			if (operation !== 'move' && operation !== 'patch') {
+				suggestion.change = {
+					kind: 'report',
+					target: suggestion.proposedPath,
+					reason: suggestion.detail,
+					risk: 'medium',
+					diff: `Proposed path: ${suggestion.proposedPath}`,
+					requiresConfirmation: true,
+				};
+				return suggestion;
+			}
+			const sourcePath = item.sourcePath === undefined
+				? suggestion.proposedPath
+				: assertKnowledgeBasePath(item.sourcePath, root, 'sourcePath');
+			suggestion.sourcePath = sourcePath;
+			if (operation === 'move') {
+				suggestion.change = { kind: 'move', target: suggestion.proposedPath, reason: suggestion.detail, risk: 'medium', requiresConfirmation: true, action: 'moveFile' };
+			} else {
+				const afterContent = item.afterContent;
+				if (typeof afterContent !== 'string') throw new Error('AI patch suggestion requires afterContent');
+				suggestion.change = { kind: 'patch', target: sourcePath, reason: suggestion.detail, risk: 'medium', requiresConfirmation: true, action: 'patchFrontmatter', afterContent };
+			}
 		}
 		return suggestion;
 	});

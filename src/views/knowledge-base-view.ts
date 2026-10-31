@@ -36,8 +36,8 @@ export class KnowledgeBaseView extends ItemView {
 	getIcon(): string { return 'book-open'; }
 
 	async onOpen(): Promise<void> {
-		this.registerEvent(this.app.workspace.on('file-open', () => this.render()));
-		this.render();
+		this.registerEvent(this.app.workspace.on('file-open', () => void this.render()));
+		await this.render();
 	}
 
 	async onClose(): Promise<void> {
@@ -46,10 +46,10 @@ export class KnowledgeBaseView extends ItemView {
 
 	activateTab(tab: KnowledgeBaseTab): void {
 		this.activeTab = tab;
-		this.render();
+		void this.render();
 	}
 
-	private render(): void {
+	private async render(): Promise<void> {
 		const { contentEl } = this;
 		contentEl.empty();
 		contentEl.addClass('knowledge-base-assistant');
@@ -70,10 +70,11 @@ export class KnowledgeBaseView extends ItemView {
 		}
 
 		const body = contentEl.createDiv('knowledge-base-tab-content');
-		const context = { app: this.app, plugin: this.services.plugin, rootPath: this.services.plugin.settings.knowledgeBaseRoot, effectiveRules: null };
+		const effectiveRules = await this.services.ruleStore.loadEffectiveRules().catch(() => null);
+		const context = { app: this.app, plugin: this.services.plugin, rootPath: this.services.plugin.settings.knowledgeBaseRoot, effectiveRules };
 		if (this.activeTab === 'overview') renderOverviewTab(body, { ...context, indexRunner: this.services.indexRunner, ruleStore: this.services.ruleStore, checkEngine: this.services.checkEngine });
 		if (this.activeTab === 'rules') renderRulesTab(body, { ...context, ruleStore: this.services.ruleStore });
 		if (this.activeTab === 'ai-organize') renderAiOrganizeTab(body, { ...context, ruleStore: this.services.ruleStore, checkEngine: this.services.checkEngine, aiClient: this.services.aiClient, changeApplier: this.services.changeApplier });
-		if (this.activeTab === 'daily-backfill') renderDailyBackfillTab(body, { ...context, ruleStore: this.services.ruleStore, dailyService: this.services.dailyService, aiClient: this.services.aiClient });
+		if (this.activeTab === 'daily-backfill') renderDailyBackfillTab(body, { ...context, ruleStore: this.services.ruleStore, dailyService: this.services.dailyService, aiClient: this.services.aiClient, changeApplier: this.services.changeApplier });
 	}
 }

@@ -52,6 +52,34 @@ Quick starting guide for new plugin devs:
 - `npm i` to install dependencies.
 - `npm run dev` to start compilation in watch mode.
 
+## Knowledge base assistant
+
+This plugin provides a four-tab assistant for the configured knowledge base:
+
+- **Overview** checks or regenerates the index and opens the configured folder.
+- **Rules** edits `知识库规则.md` using the R1 settings/body/source editor. Invalid structured rules can be saved as Markdown, but the last valid activation remains effective until a valid configuration is saved.
+- **AI organize** analyzes the current document by default, or the current folder, for classification, summaries, relations, and confirmed changes.
+- **Daily backfill** reviews today’s raw material at the end of the day and provides a manual weekly review for associations, conflicts, omissions, stale knowledge, and skill candidates.
+
+### Desktop-only index operations
+
+Index operations run the configured Python executable with the configured script from the active Vault root. The defaults are:
+
+```text
+Knowledge base: 000ai知识库价值写作体系
+Rules:         000ai知识库价值写作体系/系统/知识库规则.md
+Index script:  000ai知识库价值写作体系/系统/generate-index.py
+Python:        /usr/bin/python3
+```
+
+Because Obsidian mobile cannot safely launch a local Python process, these index operations require desktop Obsidian. The script path must remain inside the Vault.
+
+### OpenAI-compatible setup and privacy
+
+Configure the API base URL, model, and API key in **Settings → Community plugins → Knowledge base assistant**. The key is stored only in the local plugin data store. AI requests are manual: opening, switching, or saving a note never sends content in the background.
+
+Before every request the panel shows the exact selected files and content. The request is sent only after an explicit upload confirmation. AI responses are suggestions; accepted patch and move plans show a diff and are applied only after confirmation through the local safety checks. If a file changes after preview, the operation is rejected as stale. Operation history stores metadata only—timestamps, scope, rule version, status, and a user-facing message—not Vault content or raw AI responses.
+
 ## Manually installing the plugin
 
 - Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
