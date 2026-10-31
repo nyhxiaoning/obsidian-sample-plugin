@@ -16,14 +16,27 @@ const suggestion = JSON.stringify([{ kind: 'summary', title: '摘要', detail: '
 void describe('CLI provider adapters', () => {
 	void it('defines safe non-interactive arguments and fixed test prompts', () => {
 		const adapters = createCliProviderAdapters();
+		assert.equal(adapters.codex.promptTransport, 'stdin');
+		assert.equal(adapters.claude.promptTransport, 'argv');
+		assert.equal(adapters.gemini.promptTransport, 'argv');
+		assert.equal(adapters.opencode.promptTransport, 'argv');
 		assert.deepEqual(adapters.codex.requestArgs(true), ['exec', '--json', '--skip-git-repo-check']);
-		assert.deepEqual(adapters.claude.requestArgs(true), ['-p', '--output-format', 'json']);
-		assert.deepEqual(adapters.gemini.requestArgs(true), ['--prompt', '--output-format', 'json']);
-		assert.deepEqual(adapters.opencode.requestArgs(true), ['run']);
+		assert.deepEqual(adapters.claude.requestArgs(true, 'Return exactly []'), ['-p', 'Return exactly []', '--output-format', 'json']);
+		assert.deepEqual(adapters.gemini.requestArgs(true, 'Return exactly []'), ['--prompt', 'Return exactly []', '--output-format', 'json']);
+		assert.deepEqual(adapters.opencode.requestArgs(true, 'Return exactly []'), ['run', 'Return exactly []']);
 		for (const adapter of Object.values(adapters)) {
 			assert.match(adapter.buildPrompt(request, true), /\[\]/);
 			assert.doesNotMatch(adapter.buildPrompt(request, true), /# Note|note\.md/);
 		}
+	});
+
+	void it('keeps formal prompts as literal argv values instead of shell text', () => {
+		const prompt = 'Return []; $(touch hacked) && cat /vault/secret.md';
+		const adapters = createCliProviderAdapters();
+		assert.deepEqual(adapters.codex.requestArgs(false, prompt), ['exec', '--json', '--skip-git-repo-check']);
+		assert.equal(adapters.claude.requestArgs(false, prompt)[1], prompt);
+		assert.equal(adapters.gemini.requestArgs(false, prompt)[1], prompt);
+		assert.equal(adapters.opencode.requestArgs(false, prompt)[1], prompt);
 	});
 
 	void it('parses direct JSON assistant content for every provider', () => {

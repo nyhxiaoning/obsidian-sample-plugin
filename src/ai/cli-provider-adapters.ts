@@ -4,7 +4,8 @@ import { parseAiSuggestions, type AiSuggestion } from './response-parser';
 
 export interface CliProviderAdapter {
 	readonly versionArgs: string[];
-	requestArgs(test: boolean): string[];
+	readonly promptTransport: 'stdin' | 'argv';
+	requestArgs(test: boolean, prompt?: string): string[];
 	buildPrompt(request: AiRequest, test?: boolean): string;
 	parseOutput(stdout: string, stderr: string, request: AiRequest): AiSuggestion[];
 	parseVersion(stdout: string, stderr: string): string;
@@ -92,10 +93,15 @@ function parseVersion(stdout: string, stderr: string): string {
 	return firstLine.slice(0, 200);
 }
 
-function createAdapter(versionArgs: string[], requestArgs: string[]): CliProviderAdapter {
+function createAdapter(versionArgs: string[], promptTransport: 'stdin' | 'argv', requestArgs: string[]): CliProviderAdapter {
 	return {
 		versionArgs,
-		requestArgs: () => [...requestArgs],
+		promptTransport,
+		requestArgs: (_test, prompt) => {
+			if (promptTransport === 'stdin' || prompt === undefined) return [...requestArgs];
+			if (requestArgs[0] === '-p' || requestArgs[0] === '--prompt') return [requestArgs[0], prompt, ...requestArgs.slice(1)];
+			return [...requestArgs, prompt];
+		},
 		buildPrompt: (request, test = false) => test ? TEST_PROMPT : (() => {
 			const prompt = buildAiPrompt(request);
 			return `${prompt.system}\n\n${prompt.user}`;
@@ -107,10 +113,10 @@ function createAdapter(versionArgs: string[], requestArgs: string[]): CliProvide
 
 export function createCliProviderAdapters(): CliProviderAdapters {
 	return {
-		codex: createAdapter(['--version'], ['exec', '--json', '--skip-git-repo-check']),
-		claude: createAdapter(['--version'], ['-p', '--output-format', 'json']),
-		gemini: createAdapter(['--version'], ['--prompt', '--output-format', 'json']),
-		opencode: createAdapter(['--version'], ['run']),
+		codex: createAdapter(['--version'], 'stdin', ['exec', '--json', '--skip-git-repo-check']),
+		claude: createAdapter(['--version'], 'argv', ['-p', '--output-format', 'json']),
+		gemini: createAdapter(['--version'], 'argv', ['--prompt', '--output-format', 'json']),
+		opencode: createAdapter(['--version'], 'argv', ['run']),
 	};
 }
 
