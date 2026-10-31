@@ -2,29 +2,17 @@ import { App, PluginSettingTab, Setting } from 'obsidian';
 import KnowledgeBasePlugin from './main';
 import { zhCN } from './i18n/zh-CN';
 
-export interface KnowledgeBaseSettings {
-	knowledgeBaseRoot: string;
-	rulesPath: string;
-	indexScriptPath: string;
-	pythonPath: string;
-	apiBaseUrl: string;
-	model: string;
-	apiKey: string;
-	requestTimeoutMs: number;
-}
+export {
+	DEFAULT_SETTINGS,
+	normalizeSettings,
+	type AiProviderKind,
+	type KnowledgeBaseSettings,
+	type LocalCliProviderSettings,
+	type LocalCliProviderStatus,
+} from './settings-model';
+import type { KnowledgeBaseSettings } from './settings-model';
 
-export type { KnowledgeBaseSettings as MyPluginSettings };
-
-export const DEFAULT_SETTINGS: KnowledgeBaseSettings = {
-	knowledgeBaseRoot: '000ai知识库价值写作体系',
-	rulesPath: '000ai知识库价值写作体系/系统/知识库规则.md',
-	indexScriptPath: '000ai知识库价值写作体系/系统/generate-index.py',
-	pythonPath: '/usr/bin/python3',
-	apiBaseUrl: '',
-	model: '',
-	apiKey: '',
-	requestTimeoutMs: 60000,
-};
+export type { KnowledgeBaseSettings as MyPluginSettings } from './settings-model';
 
 export class KnowledgeBaseSettingTab extends PluginSettingTab {
 	plugin: KnowledgeBasePlugin;
@@ -119,7 +107,7 @@ export class KnowledgeBaseSettingTab extends PluginSettingTab {
 		name: string,
 		description: string,
 		placeholder: string,
-		key: Exclude<keyof KnowledgeBaseSettings, 'apiKey' | 'requestTimeoutMs'>,
+		key: 'knowledgeBaseRoot' | 'rulesPath' | 'indexScriptPath' | 'pythonPath' | 'apiBaseUrl' | 'model',
 	) {
 		new Setting(this.containerEl)
 			.setName(name)
