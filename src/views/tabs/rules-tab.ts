@@ -1,0 +1,65 @@
+import { Notice, Setting } from 'obsidian';
+import type { App } from 'obsidian';
+import type KnowledgeBasePlugin from '../../main';
+import type { RuleStore } from '../../rules/rule-store';
+import { extractRuleBlock, replaceRuleBlock } from '../../rules/rule-document';
+import type { KnowledgeRules } from '../../rules/rule-schema';
+
+export interface RulesContext { app: App; plugin: KnowledgeBasePlugin; rootPath: string; effectiveRules: null; ruleStore: RuleStore; }
+
+export function renderRulesTab(container: HTMLElement, context: RulesContext): void {
+	container.createEl('h3', { text: 'Rules (R1 editor)' });
+	const content = container.createDiv();
+	const subTabs = container.createDiv('knowledge-base-subtabs');
+	const panes: Record<'settings' | 'body' | 'source', HTMLElement> = { settings: content.createDiv(), body: content.createDiv(), source: content.createDiv() };
+	for (const [name, pane] of Object.entries(panes)) {
+		const button = subTabs.createEl('button', { text: `${name.charAt(0).toUpperCase()}${name.slice(1)}` });
+		button.addEventListener('click', () => { for (const item of Object.values(panes)) item.toggleClass('is-hidden', item !== pane); });
+		pane.toggleClass('is-hidden', name !== 'settings');
+	}
+	void loadRules(panes, context);
+}
+
+async function loadRules(panes: Record<'settings' | 'body' | 'source', HTMLElement>, context: RulesContext): Promise<void> {
+	let markdown = '';
+	const abstractFile = context.app.vault.getAbstractFileByPath(context.plugin.settings.rulesPath);
+	if (!abstractFile || !('extension' in abstractFile)) { panes.source.createEl('p', { text: 'Rules document could not be read.' }); return; }
+	try { markdown = await context.app.vault.read(abstractFile as import('obsidian').TFile); } catch { panes.source.createEl('p', { text: 'Rules document could not be read.' }); return; }
+	const result = context.ruleStore.validateDocument(markdown);
+	const block = extractRuleBlock(markdown);
+	const source = panes.source.createEl('textarea', { cls: 'knowledge-base-source-editor' });
+	source.value = markdown;
+	const settings = panes.settings;
+	if (!result.valid) {
+		settings.createEl('p', { text: 'Current document is invalid. The last effective rules remain active.' }).addClass('knowledge-base-error');
+		for (const error of result.errors) settings.createEl('p', { text: `${error.path}: ${error.message}` }).addClass('knowledge-base-error');
+		return;
+	}
+	const rules = result.rules;
+	const checkboxes: Array<[keyof KnowledgeRules['checks'], string]> = [['fileName', 'File names'], ['directory', 'Directories'], ['source', 'Source metadata'], ['duplicateTopic', 'Duplicate topics'], ['relatedLinks', 'Related links']];
+	settings.createEl('p', { text: 'Structured settings are the executable portion of this Markdown document.' });
+	for (const [key, label] of checkboxes) new Setting(settings).setName(label).addToggle((toggle) => toggle.setValue(rules.checks[key]).onChange((value) => { rules.checks[key] = value; }));
+	const body = panes.body;
+	body.createEl('p', { text: 'Edit the human-readable guidance in the source editor. The executable YAML block is preserved.' });
+	const bodyEditor = body.createEl('textarea', { cls: 'knowledge-base-source-editor' });
+	bodyEditor.value = block ? `${markdown.slice(0, block.start)}${markdown.slice(block.end)}`.trim() : markdown;
+	const initialBody = bodyEditor.value;
+	const save = (buttonText: string, action: () => Promise<void>) => new Setting(settings).addButton((button) => button.setButtonText(buttonText).setCta().onClick(() => void action()));
+	save('Save and activate', async () => {
+		const editedSource = bodyEditor.value !== initialBody
+			? `${bodyEditor.value.trim()}\n\n${source.value.slice(block?.start ?? 0, block?.end ?? source.value.length)}`
+			: source.value;
+		const next = replaceRuleBlock(editedSource, rules);
+		const file = context.app.vault.getAbstractFileByPath(context.plugin.settings.rulesPath);
+		if (!file || !('extension' in file)) throw new Error('Rules document could not be found.');
+		await context.app.vault.modify(file as import('obsidian').TFile, next);
+		await context.ruleStore.activateValidRules(rules, String(next.length));
+		new Notice('Rules saved and activated.');
+	});
+	save('Restore effective rules', async () => {
+		const effective = await context.ruleStore.loadEffectiveRules();
+		if (!effective) { new Notice('No valid effective rules are stored.'); return; }
+		source.value = replaceRuleBlock(source.value, effective);
+		new Notice('Editor restored to the last effective rules. Save to activate.');
+	});
+}

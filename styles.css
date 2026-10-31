@@ -1,8 +1,15 @@
-/*
-
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
-
-If your plugin does not need CSS, delete this file.
-
-*/
+.knowledge-base-assistant { padding: 10px; }
+.knowledge-base-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.knowledge-base-header h2 { margin: 0 0 10px; font-size: var(--font-ui-medium); }
+.knowledge-base-tabs, .knowledge-base-subtabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
+.knowledge-base-tabs button, .knowledge-base-subtabs button { color: var(--text-muted); background: transparent; border: 0; padding: 5px 7px; cursor: pointer; }
+.knowledge-base-tabs button.is-active, .knowledge-base-subtabs button.is-active { color: var(--text-normal); background: var(--background-modifier-hover); }
+.knowledge-base-tab-content { min-width: 0; }
+.knowledge-base-tab-content .setting-item { padding: 8px 0; display: block; }
+.knowledge-base-tab-content .setting-item-info { margin-bottom: 6px; }
+.knowledge-base-source-editor { width: 100%; min-height: 180px; resize: vertical; font-family: var(--font-monospace); box-sizing: border-box; }
+.knowledge-base-upload-preview { max-height: 180px; overflow: auto; white-space: pre-wrap; background: var(--background-secondary); padding: 8px; }
+.knowledge-base-error { color: var(--text-error); }
+.knowledge-base-suggestion { border-top: 1px solid var(--background-modifier-border); padding: 8px 0; }
+.knowledge-base-daily-files { max-height: 260px; overflow: auto; }
+@media (max-width: 420px) { .knowledge-base-header { display: block; } .knowledge-base-tabs button { flex: 1 1 45%; } }
