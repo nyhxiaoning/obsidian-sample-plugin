@@ -4,6 +4,15 @@ import type { KnowledgeRules } from './rules/rule-schema';
 /** Minimal read-only Vault surface used by deterministic checks. */
 export interface VaultLike {
 	read(path: string): Promise<string>;
+	exists?(path: string): Promise<boolean>;
+	modify?(path: string, data: string): Promise<void>;
+	rename?(path: string, newPath: string): Promise<void>;
+}
+
+/** Vault surface required by confirmed change application. */
+export interface VaultMutationLike extends VaultLike {
+	modify(path: string, data: string): Promise<void>;
+	rename(path: string, newPath: string): Promise<void>;
 }
 
 export interface RuleActivationState {
@@ -12,3 +21,4 @@ export interface RuleActivationState {
 	schemaVersion: number;
 	activatedAt: string;
 }
+
