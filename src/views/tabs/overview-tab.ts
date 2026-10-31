@@ -1,4 +1,5 @@
 import { Notice, Setting, TFolder } from 'obsidian';
+import type { TextComponent } from 'obsidian';
 import type { App } from 'obsidian';
 import type KnowledgeBasePlugin from '../../main';
 import type { IndexRunner } from '../../types';
@@ -10,7 +11,8 @@ export interface OverviewContext { app: App; plugin: KnowledgeBasePlugin; rootPa
 
 export function renderOverviewTab(container: HTMLElement, context: OverviewContext): void {
 	container.createEl('h3', { text: zhCN.overview.heading });
-	container.createEl('p', { text: zhCN.overview.knowledgeBase(context.rootPath) });
+	let selectedRootPath = context.rootPath;
+	const rootSummary = container.createEl('p', { text: zhCN.overview.knowledgeBase(selectedRootPath) });
 	const status = container.createDiv('knowledge-base-status');
 	status.setText(zhCN.overview.checking);
 	void runUi(status, async () => {
@@ -27,8 +29,26 @@ export function renderOverviewTab(container: HTMLElement, context: OverviewConte
 	})).addButton((button) => button.setButtonText(zhCN.overview.regenerate).setCta().onClick(async () => {
 		await runUi(status, async () => { const result = await context.indexRunner.run('generate'); new Notice(zhCN.overview.indexNotice(indexStatusLabel(result.status))); });
 	}));
+	let folderInput: TextComponent;
+	new Setting(actions)
+		.setName(zhCN.overview.knowledgeBaseFolder)
+		.setDesc(zhCN.overview.knowledgeBaseFolderDesc)
+		.addText((text) => { folderInput = text; text.setValue(selectedRootPath); })
+		.addButton((button) => button.setButtonText(zhCN.overview.switchFolder).setCta().onClick(async () => {
+			const path = folderInput.getValue().trim() || selectedRootPath;
+			const file = context.app.vault.getAbstractFileByPath(path);
+			if (!(file instanceof TFolder)) {
+				new Notice(zhCN.overview.folderUnavailable);
+				return;
+			}
+			selectedRootPath = path;
+			context.plugin.settings.knowledgeBaseRoot = path;
+			await context.plugin.saveSettings();
+			rootSummary.setText(zhCN.overview.knowledgeBase(selectedRootPath));
+			new Notice(zhCN.overview.folderSwitched(path));
+		}));
 	new Setting(actions).setName(zhCN.overview.openKnowledgeBase).addButton((button) => button.setButtonText(zhCN.overview.openFolder).onClick(() => {
-		const file = context.app.vault.getAbstractFileByPath(context.rootPath);
+		const file = context.app.vault.getAbstractFileByPath(selectedRootPath);
 		if (file instanceof TFolder) {
 			const leaves = context.app.workspace.getLeavesOfType('file-explorer');
 			const explorer = leaves[0]?.view as unknown as { revealInFolder?: (folder: TFolder) => void } | undefined;
