@@ -1,11 +1,11 @@
 {
 	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"name": "Knowledge Base Assistant",
 	"version": "1.0.0",
 	"minAppVersion": "1.0.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
+	"description": "Manage a local knowledge base with deterministic checks and confirmed AI suggestions.",
 	"author": "Obsidian",
 	"authorUrl": "https://obsidian.md",
 	"fundingUrl": "https://obsidian.md/pricing",
-	"isDesktopOnly": false
+	"isDesktopOnly": true
 }
