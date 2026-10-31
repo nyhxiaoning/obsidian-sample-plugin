@@ -1,20 +1,19 @@
 import { Plugin, TFile } from 'obsidian';
-import {
-	DEFAULT_SETTINGS,
-	KnowledgeBaseSettingTab,
-	KnowledgeBaseSettings,
-} from './settings';
+import { KnowledgeBaseSettingTab, type KnowledgeBaseSettings } from './settings';
 import { RuleStore } from './rules/rule-store';
 import { LocalCheckEngine } from './checks/local-check-engine';
 import { ChangeApplier } from './changes/change-applier';
 import { IndexRunnerImpl } from './index/index-runner';
-import { OpenAICompatibleClient } from './ai/openai-compatible-client';
+import { AiClientRouter } from './ai/ai-client-router';
+import { LocalCliAiClient } from './ai/local-cli-client';
+import { createCliProviderAdapters } from './ai/cli-provider-adapters';
 import { DailyBackfillService } from './daily/daily-backfill-service';
 import { KnowledgeBaseView, VIEW_TYPE_KNOWLEDGE_BASE } from './views/knowledge-base-view';
 import type { VaultMutationLike } from './types';
 import type { KnowledgeRules } from './rules/rule-schema';
 import { createDefaultKnowledgeRules } from './rules/default-rules';
 import { zhCN } from './i18n/zh-CN';
+import { normalizeSettings, type AiProviderKind } from './settings-model';
 
 export const KNOWLEDGE_BASE_VIEW_TYPE = VIEW_TYPE_KNOWLEDGE_BASE;
 
@@ -36,15 +35,43 @@ export default class KnowledgeBasePlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign(
-			{},
-			DEFAULT_SETTINGS,
-			(await this.loadData()) as Partial<KnowledgeBaseSettings>,
-		);
+		this.settings = normalizeSettings((await this.loadData()) as Partial<KnowledgeBaseSettings>);
 	}
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+	}
+
+	selectAiProvider(kind: AiProviderKind): void {
+		this.settings.aiProvider = kind;
+	}
+
+	async detectLocalProvider(kind: Exclude<AiProviderKind, 'custom'>): Promise<void> {
+		try {
+			const client = this.createLocalCliClient(kind);
+			const version = await client.detect();
+			const provider = this.settings.localCliProviders[kind];
+			provider.version = version;
+			provider.status = 'available';
+			provider.error = '';
+		} catch (error) {
+			this.markLocalProviderFailed(kind, error);
+		}
+		await this.saveSettings();
+	}
+
+	async testLocalProvider(kind: Exclude<AiProviderKind, 'custom'>): Promise<void> {
+		try {
+			const result = await this.createLocalCliClient(kind).testConnection();
+			const provider = this.settings.localCliProviders[kind];
+			provider.version = result.version;
+			provider.status = 'tested';
+			provider.lastTestedAt = Date.now();
+			provider.error = '';
+		} catch (error) {
+			this.markLocalProviderFailed(kind, error);
+		}
+		await this.saveSettings();
 	}
 
 	private createViewServices() {
@@ -65,11 +92,9 @@ export default class KnowledgeBasePlugin extends Plugin {
 			pythonPath: this.settings.pythonPath,
 			timeoutMs: this.settings.requestTimeoutMs,
 		});
-		const aiClient = new OpenAICompatibleClient({
-			baseUrl: this.settings.apiBaseUrl,
-			model: this.settings.model,
-			apiKey: this.settings.apiKey,
-			timeoutMs: this.settings.requestTimeoutMs,
+		const aiClient = new AiClientRouter({
+			getSettings: () => this.settings,
+			cwd: basePath,
 		});
 		const vault = {
 			getMarkdownFiles: () => this.app.vault.getMarkdownFiles().map((file) => ({ path: file.path, stat: file.stat })),
@@ -106,12 +131,35 @@ export default class KnowledgeBasePlugin extends Plugin {
 		};
 	}
 
+	private createLocalCliClient(kind: Exclude<AiProviderKind, 'custom'>): LocalCliAiClient {
+		const adapter = createCliProviderAdapters()[kind];
+		const basePath = (this.app.vault.adapter as typeof this.app.vault.adapter & { getBasePath?: () => string }).getBasePath?.() ?? '';
+		return new LocalCliAiClient({
+			adapter,
+			executable: this.settings.localCliProviders[kind].executablePath,
+			cwd: basePath,
+			root: this.settings.knowledgeBaseRoot,
+			timeoutMs: this.settings.requestTimeoutMs,
+		});
+	}
+
+	private markLocalProviderFailed(kind: Exclude<AiProviderKind, 'custom'>, error: unknown): void {
+		const provider = this.settings.localCliProviders[kind];
+		provider.status = 'failed';
+		provider.error = sanitizeProviderError(error);
+	}
+
 	private async activateView() {
 		const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_KNOWLEDGE_BASE)[0];
 		const leaf = existing ?? this.app.workspace.getRightLeaf(false);
 		if (!leaf) return;
 		await leaf.setViewState({ type: VIEW_TYPE_KNOWLEDGE_BASE, active: true });
 	}
+}
+
+function sanitizeProviderError(error: unknown): string {
+	const message = error instanceof Error ? error.message : String(error);
+	return message.replace(/[\r\n]+/g, ' ').replace(/(api[_ -]?key|token|secret)\s*[:=]\s*\S+/gi, '$1=[已隐藏]').slice(0, 240);
 }
 
 function fallbackRules(): KnowledgeRules {

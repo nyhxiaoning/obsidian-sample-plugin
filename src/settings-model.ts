@@ -55,6 +55,16 @@ export function normalizeSettings(data: Partial<KnowledgeBaseSettings> | null | 
 	};
 }
 
+export function clearLocalProviderTestState(provider: LocalCliProviderSettings): LocalCliProviderSettings {
+	return {
+		...provider,
+		status: 'unknown',
+		version: '',
+		lastTestedAt: null,
+		error: '',
+	};
+}
+
 function createLocalCliProvider(executablePath: string): LocalCliProviderSettings {
 	return {
 		executablePath,

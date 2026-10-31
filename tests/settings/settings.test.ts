@@ -2,6 +2,7 @@ import { deepStrictEqual, equal } from 'node:assert/strict';
 import { test } from 'node:test';
 import {
 	DEFAULT_SETTINGS,
+	clearLocalProviderTestState,
 	normalizeSettings,
 	type AiProviderKind,
 	type KnowledgeBaseSettings,
@@ -29,6 +30,24 @@ void test('backfills local provider settings for existing configuration', () => 
 			opencode: 'opencode',
 		},
 	);
+});
+
+void test('changing a local executable clears its previous test state', () => {
+	const provider = clearLocalProviderTestState({
+		executablePath: '/custom/codex',
+		status: 'tested',
+		version: '1.2.3',
+		lastTestedAt: 123,
+		error: 'old error',
+	});
+
+	deepStrictEqual(provider, {
+		executablePath: '/custom/codex',
+		status: 'unknown',
+		version: '',
+		lastTestedAt: null,
+		error: '',
+	});
 });
 
 void test('local provider test state defaults to unknown without credential-like metadata', () => {

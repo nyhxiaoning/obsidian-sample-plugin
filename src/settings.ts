@@ -1,6 +1,7 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import KnowledgeBasePlugin from './main';
 import { zhCN } from './i18n/zh-CN';
+import { clearLocalProviderTestState, type AiProviderKind, type LocalCliProviderSettings } from './settings-model';
 
 export {
 	DEFAULT_SETTINGS,
@@ -10,7 +11,6 @@ export {
 	type LocalCliProviderSettings,
 	type LocalCliProviderStatus,
 } from './settings-model';
-import type { KnowledgeBaseSettings } from './settings-model';
 
 export type { KnowledgeBaseSettings as MyPluginSettings } from './settings-model';
 
@@ -59,12 +59,32 @@ export class KnowledgeBaseSettingTab extends PluginSettingTab {
 		);
 
 		new Setting(containerEl).setName(zhCN.settings.aiProvider).setHeading();
+		new Setting(containerEl)
+			.setName(zhCN.settings.providerSelection)
+			.setDesc(zhCN.settings.providerSelectionDesc)
+			.addDropdown((dropdown) => {
+				dropdown
+					.addOption('custom', zhCN.settings.aiProviderCustom)
+					.addOption('codex', zhCN.settings.aiProviderCodex)
+					.addOption('claude', zhCN.settings.aiProviderClaude)
+					.addOption('gemini', zhCN.settings.aiProviderGemini)
+					.addOption('opencode', zhCN.settings.aiProviderOpencode)
+					.setValue(this.plugin.settings.aiProvider)
+					.onChange(async (value) => {
+						this.plugin.selectAiProvider(value as AiProviderKind);
+						await this.plugin.saveSettings();
+						this.display();
+					});
+			});
 		this.addTextSetting(
 			zhCN.settings.apiBaseUrl,
 			zhCN.settings.apiBaseUrlDesc,
 			'https://api.openai.com/v1',
 			'apiBaseUrl',
 		);
+		for (const kind of ['codex', 'claude', 'gemini', 'opencode'] as const) {
+			this.addLocalProviderSetting(kind);
+		}
 		this.addTextSetting(
 			zhCN.settings.model,
 			zhCN.settings.modelDesc,
@@ -101,6 +121,65 @@ export class KnowledgeBaseSettingTab extends PluginSettingTab {
 						}
 					}),
 			);
+	}
+
+	private addLocalProviderSetting(kind: Exclude<AiProviderKind, 'custom'>): void {
+		const provider = this.plugin.settings.localCliProviders[kind];
+		const card = this.containerEl.createDiv('knowledge-base-provider-card');
+		new Setting(card).setName(zhCN.settings.providerName[kind]).setHeading();
+		card.createEl('p', { text: zhCN.settings.providerCardDesc });
+		new Setting(card)
+			.setName(zhCN.settings.providerExecutablePath)
+			.setDesc(zhCN.settings.providerExecutablePathDesc)
+			.addText((text) => text.setValue(provider.executablePath).onChange(async (value) => {
+				this.plugin.settings.localCliProviders[kind] = clearLocalProviderTestState({ ...provider, executablePath: value.trim() || kind });
+				await this.plugin.saveSettings();
+				this.display();
+			}));
+		const status = card.createEl('p', { cls: 'knowledge-base-provider-status' });
+		status.setText(this.providerStatus(provider));
+		new Setting(card)
+			.setName(zhCN.settings.providerActions)
+			.addButton((button) => button
+				.setButtonText(zhCN.settings.detectProvider)
+				.onClick(async () => {
+					button.buttonEl.disabled = true;
+					await this.plugin.detectLocalProvider(kind);
+					this.display();
+				}));
+		new Setting(card)
+			.addButton((button) => {
+				button.setButtonText(zhCN.settings.testProvider);
+				button.buttonEl.disabled = provider.status !== 'available' && provider.status !== 'tested';
+				button.onClick(async () => {
+					button.buttonEl.disabled = true;
+					await this.plugin.testLocalProvider(kind);
+					this.display();
+				});
+			})
+			.addButton((button) => {
+				button.setButtonText(zhCN.settings.useProvider).setCta();
+				button.buttonEl.disabled = provider.status !== 'tested';
+				button.onClick(async () => {
+					this.plugin.selectAiProvider(kind);
+					await this.plugin.saveSettings();
+					this.display();
+				});
+			});
+	}
+
+	private providerStatus(provider: LocalCliProviderSettings): string {
+		const labels = {
+			unknown: zhCN.settings.providerStatusUnknown,
+			available: zhCN.settings.providerStatusAvailable,
+			tested: zhCN.settings.providerStatusTested,
+			failed: zhCN.settings.providerStatusFailed,
+		};
+		const parts: string[] = [labels[provider.status]];
+		if (provider.version) parts.push(`${zhCN.settings.providerVersion}：${provider.version}`);
+		if (provider.lastTestedAt) parts.push(`${zhCN.settings.providerLastTested}：${new Date(provider.lastTestedAt).toLocaleString()}`);
+		if (provider.error) parts.push(`${zhCN.settings.providerError}：${provider.error}`);
+		return parts.join(' · ');
 	}
 
 	private addTextSetting(
