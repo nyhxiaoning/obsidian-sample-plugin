@@ -1,5 +1,7 @@
 import { parse, stringify } from 'yaml';
-import { KnowledgeRules, RuleValidationError, RuleValidationResult, validateRules } from './rule-schema';
+import type { KnowledgeRules } from './rule-schema';
+import { validateRules } from './rule-validator';
+import type { RuleValidationError, RuleValidationResult } from './rule-validator';
 
 const BEGIN_MARKER = '<!-- KNOWLEDGE-RULES-BEGIN -->';
 const END_MARKER = '<!-- KNOWLEDGE-RULES-END -->';

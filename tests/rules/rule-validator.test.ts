@@ -2,7 +2,7 @@ import { deepStrictEqual, equal, ok } from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import { validateRuleDocument } from '../../src/rules/rule-document';
-import { validateRules } from '../../src/rules/rule-schema';
+import { validateRules } from '../../src/rules/rule-validator';
 
 const validDocument = await readFile(new URL('../fixtures/rules-valid.md', import.meta.url), 'utf8');
 

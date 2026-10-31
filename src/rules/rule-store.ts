@@ -1,5 +1,7 @@
 import { RuleActivationState } from '../types';
-import { KnowledgeRules, RuleValidationError, validateRules } from './rule-schema';
+import type { KnowledgeRules } from './rule-schema';
+import { validateRules } from './rule-validator';
+import type { RuleValidationError } from './rule-validator';
 import { validateRuleDocument } from './rule-document';
 
 export interface RuleStorePersistence {
