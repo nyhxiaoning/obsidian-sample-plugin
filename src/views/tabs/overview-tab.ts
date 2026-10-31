@@ -29,7 +29,12 @@ export function renderOverviewTab(container: HTMLElement, context: OverviewConte
 	}));
 	new Setting(actions).setName(zhCN.overview.openKnowledgeBase).addButton((button) => button.setButtonText(zhCN.overview.openFolder).onClick(() => {
 		const file = context.app.vault.getAbstractFileByPath(context.rootPath);
-		if (file instanceof TFolder) void context.app.workspace.openLinkText(file.path, '', false);
+		if (file instanceof TFolder) {
+			const leaves = context.app.workspace.getLeavesOfType('file-explorer');
+			const explorer = leaves[0]?.view as unknown as { revealInFolder?: (folder: TFolder) => void } | undefined;
+			if (explorer?.revealInFolder) explorer.revealInFolder(file);
+			else void context.app.workspace.openLinkText(file.path, '', false);
+		}
 		else new Notice(zhCN.overview.folderUnavailable);
 	}));
 }
