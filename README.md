@@ -2,6 +2,8 @@
 
 Knowledge Base Assistant is an Obsidian desktop plugin for maintaining a structured knowledge base. It combines deterministic local checks and file operations with optional AI suggestions. All file changes require an explicit user confirmation.
 
+插件默认使用简体中文界面，包含概览、规则、AI 整理和每日知识回填四个功能页。命令、配置键、规则 YAML 字段和技术路径保持原样，便于兼容已有配置。
+
 ## Features
 
 The plugin opens a four-tab knowledge base panel:

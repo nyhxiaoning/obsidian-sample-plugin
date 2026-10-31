@@ -1,5 +1,6 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import KnowledgeBasePlugin from './main';
+import { zhCN } from './i18n/zh-CN';
 
 export interface KnowledgeBaseSettings {
 	knowledgeBaseRoot: string;
@@ -38,57 +39,57 @@ export class KnowledgeBaseSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Configuration')
+			.setName(zhCN.settings.configuration)
 			.setHeading();
 		containerEl.createEl('p', {
-			text: 'Paths are relative to the active vault. The API key is stored locally and content is sent only after you confirm an upload preview.',
+			text: zhCN.settings.privacy,
 		});
 
 		this.addTextSetting(
-			'Knowledge base root',
-			'Vault-relative folder containing the knowledge base.',
+			zhCN.settings.knowledgeBaseRoot,
+			zhCN.settings.knowledgeBaseRootDesc,
 			'000ai知识库价值写作体系',
 			'knowledgeBaseRoot',
 		);
 		this.addTextSetting(
-			'Rules document path',
-			'Vault-relative path to the executable Markdown rules document.',
+			zhCN.settings.rulesPath,
+			zhCN.settings.rulesPathDesc,
 			'000ai知识库价值写作体系/系统/知识库规则.md',
 			'rulesPath',
 		);
 		this.addTextSetting(
-			'Index script path',
-			'Vault-relative path to generate-index.py.',
+			zhCN.settings.indexScriptPath,
+			zhCN.settings.indexScriptPathDesc,
 			'000ai知识库价值写作体系/系统/generate-index.py',
 			'indexScriptPath',
 		);
 		this.addTextSetting(
-			'Python executable',
-			'Absolute path to the Python executable used for index operations.',
+			zhCN.settings.pythonExecutable,
+			zhCN.settings.pythonExecutableDesc,
 			'/usr/bin/python3',
 			'pythonPath',
 		);
 
-		new Setting(containerEl).setName('AI provider').setHeading();
+		new Setting(containerEl).setName(zhCN.settings.aiProvider).setHeading();
 		this.addTextSetting(
-			'API base URL',
-			'OpenAI-compatible API base URL. Leave empty to disable AI requests.',
+			zhCN.settings.apiBaseUrl,
+			zhCN.settings.apiBaseUrlDesc,
 			'https://api.openai.com/v1',
 			'apiBaseUrl',
 		);
 		this.addTextSetting(
-			'Model',
-			'Model name used for manual AI analysis.',
+			zhCN.settings.model,
+			zhCN.settings.modelDesc,
 			'gpt-4o-mini',
 			'model',
 		);
 
 		new Setting(containerEl)
-			.setName('API key')
-			.setDesc('Stored only in the local plugin data store.')
+			.setName(zhCN.settings.apiKey)
+			.setDesc(zhCN.settings.apiKeyDesc)
 			.addText((text) => {
 				text
-					.setPlaceholder('Enter API key')
+					.setPlaceholder(zhCN.settings.apiKeyPlaceholder)
 					.setValue(this.plugin.settings.apiKey)
 					.onChange(async (value) => {
 						this.plugin.settings.apiKey = value.trim();
@@ -98,8 +99,8 @@ export class KnowledgeBaseSettingTab extends PluginSettingTab {
 			});
 
 		new Setting(containerEl)
-			.setName('Request timeout')
-			.setDesc('Maximum time to wait for an AI response, in milliseconds.')
+			.setName(zhCN.settings.requestTimeout)
+			.setDesc(zhCN.settings.requestTimeoutDesc)
 			.addText((text) =>
 				text
 					.setPlaceholder('60000')

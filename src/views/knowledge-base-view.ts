@@ -10,6 +10,7 @@ import { renderOverviewTab } from './tabs/overview-tab';
 import { renderRulesTab } from './tabs/rules-tab';
 import { renderAiOrganizeTab } from './tabs/ai-organize-tab';
 import { renderDailyBackfillTab } from './tabs/daily-backfill-tab';
+import { zhCN } from '../i18n/zh-CN';
 
 export const VIEW_TYPE_KNOWLEDGE_BASE = 'knowledge-base-assistant-view';
 export type KnowledgeBaseTab = 'overview' | 'rules' | 'ai-organize' | 'daily-backfill';
@@ -32,7 +33,7 @@ export class KnowledgeBaseView extends ItemView {
 	}
 
 	getViewType(): string { return VIEW_TYPE_KNOWLEDGE_BASE; }
-	getDisplayText(): string { return 'Knowledge base assistant'; }
+	getDisplayText(): string { return zhCN.plugin.viewTitle; }
 	getIcon(): string { return 'book-open'; }
 
 	async onOpen(): Promise<void> {
@@ -55,13 +56,13 @@ export class KnowledgeBaseView extends ItemView {
 		contentEl.addClass('knowledge-base-assistant');
 
 		const header = contentEl.createDiv('knowledge-base-header');
-		header.createEl('h2', { text: 'Knowledge base assistant' });
+		header.createEl('h2', { text: zhCN.plugin.viewTitle });
 		const tabs = contentEl.createDiv('knowledge-base-tabs');
 		const tabLabels: Array<[KnowledgeBaseTab, string]> = [
-			['overview', 'Overview'],
-			['rules', 'Rules'],
-			['ai-organize', 'AI organize'],
-			['daily-backfill', 'Daily backfill'],
+			['overview', zhCN.tabs.overview],
+			['rules', zhCN.tabs.rules],
+			['ai-organize', zhCN.tabs.aiOrganize],
+			['daily-backfill', zhCN.tabs.dailyBackfill],
 		];
 		for (const [tab, label] of tabLabels) {
 			const button = tabs.createEl('button', { text: label });

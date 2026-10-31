@@ -14,6 +14,7 @@ import { KnowledgeBaseView, VIEW_TYPE_KNOWLEDGE_BASE } from './views/knowledge-b
 import type { VaultMutationLike } from './types';
 import type { KnowledgeRules } from './rules/rule-schema';
 import { createDefaultKnowledgeRules } from './rules/default-rules';
+import { zhCN } from './i18n/zh-CN';
 
 export const KNOWLEDGE_BASE_VIEW_TYPE = VIEW_TYPE_KNOWLEDGE_BASE;
 
@@ -24,12 +25,12 @@ export default class KnowledgeBasePlugin extends Plugin {
 		await this.loadSettings();
 		this.addSettingTab(new KnowledgeBaseSettingTab(this.app, this));
 		this.registerView(VIEW_TYPE_KNOWLEDGE_BASE, (leaf) => new KnowledgeBaseView(leaf, this.createViewServices()));
-		this.addRibbonIcon('book-open', 'Open knowledge base assistant', () => {
+		this.addRibbonIcon('book-open', zhCN.plugin.ribbon, () => {
 			void this.activateView();
 		});
 		this.addCommand({
 			id: 'open-knowledge-base-assistant',
-			name: 'Open knowledge base assistant',
+			name: zhCN.plugin.command,
 			callback: () => void this.activateView(),
 		});
 	}
@@ -55,7 +56,7 @@ export default class KnowledgeBasePlugin extends Plugin {
 		});
 		const readPath = async (path: string) => {
 			const file = this.app.vault.getAbstractFileByPath(path);
-			if (!(file instanceof TFile)) throw new Error(`Vault file not found: ${path}`);
+			if (!(file instanceof TFile)) throw new Error(zhCN.common.fileNotFound(path));
 			return this.app.vault.read(file);
 		};
 		const indexRunner = new IndexRunnerImpl({
@@ -84,12 +85,12 @@ export default class KnowledgeBasePlugin extends Plugin {
 			exists: async (path) => this.app.vault.getAbstractFileByPath(path) !== null,
 			modify: async (path, data) => {
 				const file = this.app.vault.getAbstractFileByPath(path);
-				if (!(file instanceof TFile)) throw new Error(`Vault file not found: ${path}`);
+				if (!(file instanceof TFile)) throw new Error(zhCN.common.fileNotFound(path));
 				await this.app.vault.modify(file, data);
 			},
 			rename: async (path, newPath) => {
 				const file = this.app.vault.getAbstractFileByPath(path);
-				if (!(file instanceof TFile)) throw new Error(`Vault file not found: ${path}`);
+				if (!(file instanceof TFile)) throw new Error(zhCN.common.fileNotFound(path));
 				await this.app.vault.rename(file, newPath);
 			},
 		};
