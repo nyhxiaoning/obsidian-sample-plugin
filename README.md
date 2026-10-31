@@ -55,7 +55,18 @@ The plugin validates the configuration before activating it. If a document conta
 
 The deterministic rule engine handles checks and confirmed operations such as frontmatter fixes, template application, file moves, and index regeneration. Destructive deletion is denied by default.
 
-## OpenAI-compatible setup and privacy
+## AI 服务商、OpenAI-compatible setup and privacy
+
+插件支持五种 AI 服务商：一个自定义 API 服务商，以及四个本机命令行服务商：Codex、Claude、Gemini 和 OpenCode。四个本机 CLI 的安装、登录和账号权限由用户自行完成；插件不会代替用户安装或登录这些工具。
+
+在 **Settings → Community plugins → Knowledge base assistant** 的 AI 服务商设置中：
+
+1. 选择要配置的本机 CLI，并确认可执行文件路径。默认使用 PATH 中的命令名：`codex`、`claude`、`gemini`、`opencode`；如果命令不在 PATH 中，可以填写本机可执行文件的自定义路径。
+2. 先点击“检测命令”，确认命令存在并能返回版本信息。
+3. 检测成功后点击“发送最小测试请求”。测试提示词固定且不包含任何 Vault 内容；只有测试返回可解析的 AI 结果后，才能点击“使用此服务商”。
+4. 使用本机 CLI 进行实际整理时，仍须在 AI 整理页面检查文件范围并明确确认上传。CLI 不会直接修改 Vault，AI 输出仍然只是建议，文件修改必须经过插件的差异预览、安全检查和单独确认。
+
+本机 CLI 功能仅在 Obsidian 桌面端可用。自定义 API 服务商仍按下方说明配置。
 
 Configure the API base URL, model, and API key in **Settings → Community plugins → Knowledge base assistant**. The API key is stored in the local plugin data store.
 
