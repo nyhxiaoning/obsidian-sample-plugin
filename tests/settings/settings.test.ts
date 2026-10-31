@@ -7,6 +7,7 @@ import {
 	type AiProviderKind,
 	type KnowledgeBaseSettings,
 } from '../../src/settings-model';
+import { resolveDefaultCliPaths } from '../../src/ai/cli-path-resolver';
 
 void test('backfills local provider settings for existing configuration', () => {
 	const settings = normalizeSettings({
@@ -23,12 +24,7 @@ void test('backfills local provider settings for existing configuration', () => 
 		Object.fromEntries(
 			Object.entries(settings.localCliProviders).map(([kind, provider]) => [kind, provider.executablePath]),
 		),
-		{
-			codex: 'codex',
-			claude: 'claude',
-			gemini: 'gemini',
-			opencode: 'opencode',
-		},
+		resolveDefaultCliPaths(),
 	);
 });
 
@@ -67,6 +63,18 @@ void test('default settings expose the custom provider and stable local defaults
 
 	equal(settings.aiProvider, 'custom');
 	equal(settings.requestTimeoutMs, 60000);
-	equal(settings.localCliProviders.codex.executablePath, 'codex');
-	equal(settings.localCliProviders.opencode.executablePath, 'opencode');
+	equal(settings.localCliProviders.codex.executablePath, resolveDefaultCliPaths().codex);
+	equal(settings.localCliProviders.opencode.executablePath, resolveDefaultCliPaths().opencode);
+});
+
+void test('resolving a legacy bare command clears its stale failure state', () => {
+	const settings = normalizeSettings({
+		localCliProviders: {
+			codex: { executablePath: 'codex', status: 'failed', version: '', lastTestedAt: null, error: 'old error' },
+		} as KnowledgeBaseSettings['localCliProviders'],
+	});
+
+	equal(settings.localCliProviders.codex.executablePath, resolveDefaultCliPaths().codex);
+	equal(settings.localCliProviders.codex.status, 'unknown');
+	equal(settings.localCliProviders.codex.error, '');
 });

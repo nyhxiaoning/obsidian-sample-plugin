@@ -79,7 +79,7 @@ void describe('LocalCliAiClient', () => {
 
 		const nonzero = createRunner(() => ({ stdout: '', stderr: 'private diagnostics', exitCode: 2, signal: null }));
 		const failedClient = new LocalCliAiClient({ adapter: createCliProviderAdapters().codex, executable: 'codex', runner: nonzero.runner });
-		await assert.rejects(failedClient.detect(), (caught: unknown) => caught instanceof AiClientError && caught.code === 'provider' && !caught.message.includes('private'));
+		await assert.rejects(failedClient.detect(), (caught: unknown) => caught instanceof AiClientError && caught.code === 'provider' && caught.message.includes('检测失败') && caught.message.includes('private diagnostics'));
 
 		const invalid = createRunner(() => ({ stdout: 'not-json', stderr: '', exitCode: 0, signal: null }));
 		const invalidClient = new LocalCliAiClient({ adapter: createCliProviderAdapters().codex, executable: 'codex', runner: invalid.runner });

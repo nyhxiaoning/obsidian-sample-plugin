@@ -25,27 +25,42 @@ function safeError(code: AiClientError['code'], message: string): AiClientError 
 	return new AiClientError(code, message);
 }
 
-function mapRunnerError(error: unknown): AiClientError {
+function sanitizeDiagnostic(value: string): string {
+	return value
+		.replace(/[\r\n]+/g, ' ')
+		.replace(/(api[_ -]?key|token|secret)\s*[:=]\s*\S+/gi, '$1=[已隐藏]')
+		.slice(0, 240);
+}
+
+function mapRunnerError(error: unknown, stage: '检测' | '测试请求' | '分析'): AiClientError {
 	if (error instanceof AiClientError) return error;
 	const kind = error instanceof LocalCliRunnerError || (typeof error === 'object' && error !== null && 'kind' in error)
 		? (error as { kind?: string }).kind
 		: undefined;
+	const diagnostic = error instanceof LocalCliRunnerError && error.diagnostic ? `：${sanitizeDiagnostic(error.diagnostic)}` : '';
 	if (kind !== undefined) {
 		switch (kind) {
-			case 'not_found': return safeError('configuration', 'AI CLI executable was not found');
-			case 'timeout': return safeError('timeout', 'AI CLI request timed out');
-			case 'cancelled': return safeError('network', 'AI CLI request was cancelled');
-			case 'configuration': return safeError('configuration', 'AI CLI configuration is invalid');
+			case 'not_found': return safeError('configuration', `${stage}失败：找不到可执行文件${diagnostic}`);
+			case 'timeout': return safeError('timeout', `${stage}超时`);
+			case 'cancelled': return safeError('network', `${stage}已取消`);
+			case 'configuration': return safeError('configuration', `${stage}配置无效${diagnostic}`);
 			case 'process_error':
-			case 'output_limit':
-			default: return safeError('provider', 'AI CLI process failed');
+				return safeError('provider', `${stage}无法启动${diagnostic}`);
+			case 'output_limit': return safeError('provider', `${stage}输出超过限制`);
+			default: return safeError('provider', `${stage}进程失败${diagnostic}`);
 		}
 	}
-	return safeError('provider', 'AI CLI process failed');
+	return safeError('provider', `${stage}进程失败${error instanceof Error ? `：${sanitizeDiagnostic(error.message)}` : ''}`);
 }
 
-function assertSuccessful(result: LocalCliRunResult): void {
-	if (result.exitCode !== 0) throw safeError('provider', 'AI CLI returned a nonzero exit status');
+function assertSuccessful(result: LocalCliRunResult, stage: '检测' | '测试请求' | '分析'): void {
+	if (result.exitCode !== 0) {
+		const diagnostic = sanitizeDiagnostic(result.stderr || `exitCode=${String(result.exitCode)}`);
+		if (/log in|login|authenticate|authentication|api key|unauthorized|未登录|认证/i.test(diagnostic)) {
+			throw safeError('unauthorized', `${stage}需要登录或有效的 API Key：${diagnostic}`);
+		}
+		throw safeError('provider', `${stage}失败（退出码 ${String(result.exitCode)}）：${diagnostic}`);
+	}
 }
 
 export class LocalCliAiClient implements AiClient {
@@ -64,14 +79,14 @@ export class LocalCliAiClient implements AiClient {
 				timeoutMs: this.options.timeoutMs,
 				signal,
 			});
-			assertSuccessful(result);
+			assertSuccessful(result, '检测');
 			try {
 				return this.options.adapter.parseVersion(result.stdout, result.stderr);
 			} catch {
 				throw safeError('invalid_response', 'AI CLI returned an invalid version');
 			}
 		} catch (error) {
-			throw mapRunnerError(error);
+			throw mapRunnerError(error, '检测');
 		}
 	}
 
@@ -81,10 +96,10 @@ export class LocalCliAiClient implements AiClient {
 		const prompt = this.options.adapter.buildPrompt(request, true);
 		try {
 			const result = await this.runPrompt(true, prompt, signal);
-			assertSuccessful(result);
+			assertSuccessful(result, '测试请求');
 			return { version, suggestions: this.parse(result, request) };
 		} catch (error) {
-			throw mapRunnerError(error);
+			throw mapRunnerError(error, '测试请求');
 		}
 	}
 
@@ -92,10 +107,10 @@ export class LocalCliAiClient implements AiClient {
 		const prompt = this.options.adapter.buildPrompt(request);
 		try {
 			const result = await this.runPrompt(false, prompt, signal);
-			assertSuccessful(result);
+			assertSuccessful(result, '分析');
 			return this.parse(result, request);
 		} catch (error) {
-			throw mapRunnerError(error);
+			throw mapRunnerError(error, '分析');
 		}
 	}
 

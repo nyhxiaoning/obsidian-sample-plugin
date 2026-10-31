@@ -1,4 +1,6 @@
 import { spawn as nodeSpawn, type SpawnOptions } from 'node:child_process';
+import { accessSync, constants, readFileSync } from 'node:fs';
+import { delimiter } from 'node:path';
 
 export interface LocalCliChild {
 	stdout: { on(event: 'data', listener: (chunk: Buffer | string) => void): unknown };
@@ -38,16 +40,66 @@ export type LocalCliErrorKind = 'not_found' | 'process_error' | 'timeout' | 'can
 
 export class LocalCliRunnerError extends Error {
 	readonly kind: LocalCliErrorKind;
+	readonly diagnostic?: string;
 
-	constructor(kind: LocalCliErrorKind, message: string) {
+	constructor(kind: LocalCliErrorKind, message: string, diagnostic?: string) {
 		super(message);
 		this.name = 'LocalCliRunnerError';
 		this.kind = kind;
+		this.diagnostic = diagnostic;
 	}
 }
 
 const DEFAULT_TIMEOUT_MS = 60000;
 const DEFAULT_MAX_OUTPUT_BYTES = 1024 * 1024;
+
+function childEnvironment(): NodeJS.ProcessEnv {
+	const extraPaths = [
+		'/opt/homebrew/bin',
+		'/usr/local/bin',
+		'/usr/bin',
+		process.env.HOME ? `${process.env.HOME}/.opencode/bin` : '',
+	].filter(Boolean);
+	const currentPath = process.env.PATH ?? '';
+	const pathEntries = [...currentPath.split(delimiter), ...extraPaths].filter(Boolean);
+	return {
+		...process.env,
+		PATH: [...new Set(pathEntries)].join(delimiter),
+	};
+}
+
+function nodeExecutable(): string | undefined {
+	const candidates = [
+		'/opt/homebrew/bin/node',
+		'/usr/local/bin/node',
+		'/usr/bin/node',
+	];
+	return candidates.find((candidate) => {
+		try {
+			accessSync(candidate, constants.X_OK);
+			return true;
+		} catch {
+			return false;
+		}
+	});
+}
+
+function launchCommand(executable: string, args: string[]): { executable: string; args: string[] } {
+	const isKnownNodeCli = executable.endsWith('/codex') || executable.endsWith('/gemini');
+	try {
+		const firstLine = readFileSync(executable, 'utf8').split(/\r?\n/, 1)[0] ?? '';
+		if (isKnownNodeCli || firstLine.includes('env node') || firstLine.endsWith('/node')) {
+			const interpreter = nodeExecutable();
+			if (interpreter) return { executable: interpreter, args: [executable, ...args] };
+		}
+	} catch {
+		if (isKnownNodeCli) {
+			const interpreter = nodeExecutable();
+			if (interpreter) return { executable: interpreter, args: [executable, ...args] };
+		}
+	}
+	return { executable, args };
+}
 
 export class LocalCliRunner {
 	private readonly spawn: LocalCliSpawn;
@@ -79,10 +131,12 @@ export class LocalCliRunner {
 		return new Promise<LocalCliRunResult>((resolve, reject) => {
 			let child: LocalCliChild;
 			try {
-				child = this.spawn(options.executable, [...options.args], {
+				const launch = launchCommand(options.executable, [...options.args]);
+				child = this.spawn(launch.executable, launch.args, {
 					cwd: options.cwd,
 					shell: false,
 					stdio: 'pipe',
+					env: childEnvironment(),
 				});
 			} catch (error: unknown) {
 				reject(this.toSpawnError(error));
@@ -122,7 +176,7 @@ export class LocalCliRunner {
 
 			child.stdout.on('data', (chunk) => append('stdout', chunk));
 			child.stderr.on('data', (chunk) => append('stderr', chunk));
-			child.on('error', (error) => finishWithError(this.toProcessError(error)));
+		child.on('error', (error) => finishWithError(this.toProcessError(error)));
 			child.on('close', (exitCode, signal) => {
 				if (settled) return;
 				settled = true;
@@ -144,12 +198,13 @@ export class LocalCliRunner {
 
 	private toSpawnError(error: unknown): LocalCliRunnerError {
 		const code = typeof error === 'object' && error !== null && 'code' in error ? error.code : undefined;
+		const diagnostic = error instanceof Error ? error.message : String(error);
 		return code === 'ENOENT'
-			? new LocalCliRunnerError('not_found', 'CLI executable was not found')
-			: new LocalCliRunnerError('process_error', 'CLI process could not be started');
+			? new LocalCliRunnerError('not_found', 'CLI executable was not found', diagnostic)
+			: new LocalCliRunnerError('process_error', 'CLI process could not be started', diagnostic);
 	}
 
-	private toProcessError(_error: Error): LocalCliRunnerError {
-		return new LocalCliRunnerError('process_error', 'CLI process reported an error');
+	private toProcessError(error: Error): LocalCliRunnerError {
+		return new LocalCliRunnerError('process_error', 'CLI process reported an error', error.message);
 	}
 }

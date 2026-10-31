@@ -1,3 +1,5 @@
+import { resolveDefaultCliPaths } from './ai/cli-path-resolver';
+
 export type AiProviderKind = 'custom' | 'codex' | 'claude' | 'gemini' | 'opencode';
 
 export type LocalCliProviderStatus = 'unknown' | 'available' | 'tested' | 'failed';
@@ -30,10 +32,10 @@ export const DEFAULT_SETTINGS: KnowledgeBaseSettings = {
 	pythonPath: '/usr/bin/python3',
 	aiProvider: 'custom',
 	localCliProviders: {
-		codex: createLocalCliProvider('codex'),
-		claude: createLocalCliProvider('claude'),
-		gemini: createLocalCliProvider('gemini'),
-		opencode: createLocalCliProvider('opencode'),
+		codex: createLocalCliProvider(resolveDefaultCliPaths().codex),
+		claude: createLocalCliProvider(resolveDefaultCliPaths().claude),
+		gemini: createLocalCliProvider(resolveDefaultCliPaths().gemini),
+		opencode: createLocalCliProvider(resolveDefaultCliPaths().opencode),
 	},
 	apiBaseUrl: '',
 	model: '',
@@ -43,14 +45,15 @@ export const DEFAULT_SETTINGS: KnowledgeBaseSettings = {
 
 export function normalizeSettings(data: Partial<KnowledgeBaseSettings> | null | undefined): KnowledgeBaseSettings {
 	const partialProviders = data?.localCliProviders;
+	const defaults = resolveDefaultCliPaths();
 	return {
 		...DEFAULT_SETTINGS,
 		...data,
 		localCliProviders: {
-			codex: mergeLocalCliProvider('codex', partialProviders?.codex),
-			claude: mergeLocalCliProvider('claude', partialProviders?.claude),
-			gemini: mergeLocalCliProvider('gemini', partialProviders?.gemini),
-			opencode: mergeLocalCliProvider('opencode', partialProviders?.opencode),
+			codex: mergeLocalCliProvider('codex', partialProviders?.codex, defaults.codex),
+			claude: mergeLocalCliProvider('claude', partialProviders?.claude, defaults.claude),
+			gemini: mergeLocalCliProvider('gemini', partialProviders?.gemini, defaults.gemini),
+			opencode: mergeLocalCliProvider('opencode', partialProviders?.opencode, defaults.opencode),
 		},
 	};
 }
@@ -78,9 +81,14 @@ function createLocalCliProvider(executablePath: string): LocalCliProviderSetting
 function mergeLocalCliProvider(
 	kind: Exclude<AiProviderKind, 'custom'>,
 	provider: Partial<LocalCliProviderSettings> | undefined,
+	defaultPath: string = kind,
 ): LocalCliProviderSettings {
+	const resolvedPath = !provider?.executablePath || provider.executablePath === kind ? defaultPath : provider.executablePath;
+	const pathChanged = provider?.executablePath !== undefined && provider.executablePath !== resolvedPath;
 	return {
-		...createLocalCliProvider(kind),
+		...createLocalCliProvider(defaultPath),
 		...provider,
+		executablePath: resolvedPath,
+		...(pathChanged ? { status: 'unknown' as const, version: '', lastTestedAt: null, error: '' } : {}),
 	};
 }

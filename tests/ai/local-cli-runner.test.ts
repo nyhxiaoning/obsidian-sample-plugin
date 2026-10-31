@@ -86,6 +86,7 @@ void describe('LocalCliRunner', () => {
 		assert.equal(context.call?.command, 'codex');
 		assert.deepEqual(context.call?.args, ['--prompt', '$(touch hacked)', '--flag=value']);
 		assert.equal(context.call?.options.shell, false);
+		assert.match(String(context.call?.options.env?.PATH), /\/opt\/homebrew\/bin/);
 		assert.equal(context.call?.options.cwd, '/vault');
 		assert.equal(context.child?.receivedStdin, 'hello');
 		assert.equal(context.child?.stdinEnded, true);

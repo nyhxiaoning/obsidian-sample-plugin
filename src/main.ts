@@ -36,6 +36,7 @@ export default class KnowledgeBasePlugin extends Plugin {
 
 	async loadSettings() {
 		this.settings = normalizeSettings((await this.loadData()) as Partial<KnowledgeBaseSettings>);
+		await this.saveData(this.settings);
 	}
 
 	async saveSettings() {
