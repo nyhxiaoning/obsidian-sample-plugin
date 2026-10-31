@@ -22,3 +22,17 @@ export interface RuleActivationState {
 	activatedAt: string;
 }
 
+export type IndexMode = 'check' | 'generate';
+
+export interface IndexResult {
+	mode: IndexMode;
+	status: 'consistent' | 'stale' | 'generated' | 'failed';
+	stdout: string;
+	stderr: string;
+	exitCode: number | null;
+}
+
+export interface IndexRunner {
+	run(mode: IndexMode): Promise<IndexResult>;
+}
+
