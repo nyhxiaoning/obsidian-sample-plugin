@@ -13,6 +13,7 @@ import { DailyBackfillService } from './daily/daily-backfill-service';
 import { KnowledgeBaseView, VIEW_TYPE_KNOWLEDGE_BASE } from './views/knowledge-base-view';
 import type { VaultMutationLike } from './types';
 import type { KnowledgeRules } from './rules/rule-schema';
+import { createDefaultKnowledgeRules } from './rules/default-rules';
 
 export const KNOWLEDGE_BASE_VIEW_TYPE = VIEW_TYPE_KNOWLEDGE_BASE;
 
@@ -113,13 +114,5 @@ export default class KnowledgeBasePlugin extends Plugin {
 }
 
 function fallbackRules(): KnowledgeRules {
-	return {
-		schemaVersion: 1,
-		scope: { root: '000ai知识库价值写作体系', include: ['**/*.md'], exclude: ['系统/**'] },
-		frontmatter: { enabled: true, required: ['title', 'status', 'created', 'updated'], allowedStatus: ['draft', 'reviewing', 'verified', 'deprecated'] },
-		checks: { fileName: true, directory: true, source: true, duplicateTopic: true, relatedLinks: true },
-		actions: { patchFrontmatter: 'confirm', applyTemplate: 'confirm', moveFile: 'confirm', regenerateIndex: 'allowed', deleteFile: 'denied' },
-		ai: { tasks: ['classify', 'summarize', 'suggestRelations', 'suggestChanges'], manualOnly: true },
-		dailyBackfill: { enabled: true, dailyReview: 'manual', weeklyReview: 'manual' },
-	};
+	return createDefaultKnowledgeRules();
 }

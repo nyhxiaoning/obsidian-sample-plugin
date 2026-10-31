@@ -67,6 +67,25 @@ export function replaceRuleBlock(markdown: string, rules: KnowledgeRules): strin
 	return `${markdown.slice(0, block.start)}${replacement}${markdown.slice(block.end)}`;
 }
 
+/** Insert the executable block after existing prose without changing that prose. */
+export function insertRuleBlock(markdown: string, rules: KnowledgeRules): string {
+	if (extractRuleBlock(markdown) !== null || /<!-- KNOWLEDGE-RULES-(?:BEGIN|END) -->/.test(markdown)) {
+		throw new Error('Cannot insert rules: the document already contains rule markers');
+	}
+
+	const newline = markdown.includes('\r\n') ? '\r\n' : '\n';
+	const block = [
+		BEGIN_MARKER,
+		'```yaml',
+		stringify(rules).trimEnd().replace(/\r?\n/g, newline),
+		'```',
+		END_MARKER,
+	].join(newline);
+	if (markdown.length === 0) return `${block}${newline}`;
+	const separator = markdown.endsWith('\n') || markdown.endsWith('\r') ? '' : newline + newline;
+	return `${markdown}${separator}${block}${newline}`;
+}
+
 export function validateRuleDocument(markdown: string): RuleDocumentValidation | InvalidRuleDocument {
 	const block = extractRuleBlock(markdown);
 	if (block === null) {

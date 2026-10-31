@@ -2,7 +2,8 @@ import { Notice, Setting } from 'obsidian';
 import type { App } from 'obsidian';
 import type KnowledgeBasePlugin from '../../main';
 import type { RuleStore } from '../../rules/rule-store';
-import { extractRuleBlock, replaceRuleBlock } from '../../rules/rule-document';
+import { extractRuleBlock, insertRuleBlock, replaceRuleBlock } from '../../rules/rule-document';
+import { createDefaultKnowledgeRules } from '../../rules/default-rules';
 import type { KnowledgeRules } from '../../rules/rule-schema';
 
 export interface RulesContext { app: App; plugin: KnowledgeBasePlugin; rootPath: string; effectiveRules: import('../../rules/rule-schema').KnowledgeRules | null; ruleStore: RuleStore; }
@@ -48,6 +49,18 @@ async function loadRules(panes: Record<'settings' | 'body' | 'source', HTMLEleme
 	if (!result.valid) {
 		settings.createEl('p', { text: 'Current document is invalid. The last effective rules remain active.' }).addClass('knowledge-base-error');
 		for (const error of result.errors) settings.createEl('p', { text: `${error.path}: ${error.message}` }).addClass('knowledge-base-error');
+		new Setting(settings).addButton((button) => button.setButtonText('Insert default executable rules').setCta().onClick(() => void runUi(status, async () => {
+			const migrated = insertRuleBlock(source.value, createDefaultKnowledgeRules());
+			const migratedResult = context.ruleStore.validateDocument(migrated);
+			if (!migratedResult.valid) throw new Error(`Default rule migration failed: ${migratedResult.errors.map((error) => `${error.path}: ${error.message}`).join('; ')}`);
+			const file = context.app.vault.getAbstractFileByPath(context.plugin.settings.rulesPath);
+			if (!file || !('extension' in file)) throw new Error('Rules document could not be found.');
+			await context.app.vault.modify(file as import('obsidian').TFile, migrated);
+			await context.ruleStore.activateValidRules(migratedResult.rules, String(migrated.length));
+			source.value = migrated;
+			status.setText('Default executable rules inserted and activated.');
+			new Notice('Default executable rules inserted and activated.');
+		})));
 		new Setting(settings).addButton((button) => button.setButtonText('Save source without activating').setCta().onClick(() => void runUi(status, saveSource)));
 		new Setting(settings).addButton((button) => button.setButtonText('Restore effective rules').onClick(() => void runUi(status, async () => {
 			const effective = await context.ruleStore.loadEffectiveRules();
