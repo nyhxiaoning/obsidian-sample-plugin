@@ -36,3 +36,18 @@ export interface IndexRunner {
 	run(mode: IndexMode): Promise<IndexResult>;
 }
 
+export type AiTask =
+	| 'classify'
+	| 'summarize'
+	| 'suggestRelations'
+	| 'suggestChanges'
+	| 'dailyBackfill'
+	| 'weeklyReview';
+
+export interface AiRequest {
+	task: AiTask;
+	rules: KnowledgeRules;
+	ruleGuidance: string;
+	files: Array<{ path: string; content: string }>;
+}
+
