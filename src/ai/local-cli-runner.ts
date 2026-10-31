@@ -94,11 +94,17 @@ export class LocalCliRunner {
 			let outputBytes = 0;
 			let settled = false;
 			let timer: ReturnType<typeof setTimeout> | undefined;
+			let cancel: (() => void) | undefined;
+
+			const cleanup = (): void => {
+				if (timer !== undefined) clearTimeout(timer);
+				if (cancel !== undefined) options.signal?.removeEventListener('abort', cancel);
+			};
 
 			const finishWithError = (error: LocalCliRunnerError): void => {
 				if (settled) return;
 				settled = true;
-				if (timer !== undefined) clearTimeout(timer);
+				cleanup();
 				child.kill();
 				reject(error);
 			};
@@ -120,12 +126,12 @@ export class LocalCliRunner {
 			child.on('close', (exitCode, signal) => {
 				if (settled) return;
 				settled = true;
-				if (timer !== undefined) clearTimeout(timer);
+				cleanup();
 				resolve({ stdout, stderr, exitCode, signal });
 			});
 
-			const cancel = (): void => finishWithError(new LocalCliRunnerError('cancelled', 'CLI process was cancelled'));
-			options.signal?.addEventListener('abort', cancel, { once: true });
+			cancel = (): void => finishWithError(new LocalCliRunnerError('cancelled', 'CLI process was cancelled'));
+			if (!settled) options.signal?.addEventListener('abort', cancel, { once: true });
 			timer = setTimeout(() => finishWithError(new LocalCliRunnerError('timeout', 'CLI process timed out')), timeoutMs);
 			try {
 				if (options.stdin !== undefined) child.stdin.write(options.stdin);

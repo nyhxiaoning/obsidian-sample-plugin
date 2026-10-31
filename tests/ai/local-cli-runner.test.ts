@@ -54,6 +54,25 @@ function createRunner(
 	return { runner, get child() { return child; }, get call() { return call; } };
 }
 
+function createTrackedSignal() {
+	let listener: (() => void) | undefined;
+	let added = 0;
+	let removed = 0;
+	const signal = {
+		aborted: false,
+		addEventListener: (_type: string, callback: () => void) => {
+			listener = callback;
+			added += 1;
+		},
+		removeEventListener: (_type: string, callback: () => void) => {
+			if (listener === callback) listener = undefined;
+			removed += 1;
+		},
+		abort: () => listener?.(),
+	};
+	return { signal: signal as unknown as AbortSignal, abort: signal.abort, get added() { return added; }, get removed() { return removed; } };
+}
+
 void describe('LocalCliRunner', () => {
 	void it('spawns without a shell, passes args literally, and writes stdin', async () => {
 		const context = createRunner((created) => {
@@ -155,5 +174,34 @@ void describe('LocalCliRunner', () => {
 			assert.doesNotMatch(String(error), /secret-api-key|connection/);
 			return true;
 		});
+	});
+
+	void it('removes the abort listener on every terminal path', async () => {
+		const successSignal = createTrackedSignal();
+		const success = createRunner((child) => queueMicrotask(() => child.emit('close', 0, null)));
+		await success.runner.run({ executable: 'tool', args: [], signal: successSignal.signal });
+		assert.deepEqual({ added: successSignal.added, removed: successSignal.removed }, { added: 1, removed: 1 });
+
+		const timeoutSignal = createTrackedSignal();
+		const timeout = createRunner(() => undefined, { timeoutMs: 5 });
+		await assert.rejects(timeout.runner.run({ executable: 'tool', args: [], signal: timeoutSignal.signal }));
+		assert.deepEqual({ added: timeoutSignal.added, removed: timeoutSignal.removed }, { added: 1, removed: 1 });
+
+		const outputSignal = createTrackedSignal();
+		const output = createRunner((child) => queueMicrotask(() => child.stdout.write('12')), { maxOutputBytes: 1 });
+		await assert.rejects(output.runner.run({ executable: 'tool', args: [], signal: outputSignal.signal }));
+		assert.deepEqual({ added: outputSignal.added, removed: outputSignal.removed }, { added: 1, removed: 1 });
+
+		const errorSignal = createTrackedSignal();
+		const processError = createRunner((child) => queueMicrotask(() => child.emit('error', new Error('failed'))));
+		await assert.rejects(processError.runner.run({ executable: 'tool', args: [], signal: errorSignal.signal }));
+		assert.deepEqual({ added: errorSignal.added, removed: errorSignal.removed }, { added: 1, removed: 1 });
+
+		const cancelSignal = createTrackedSignal();
+		const cancelled = createRunner(() => undefined);
+		const cancelledRun = cancelled.runner.run({ executable: 'tool', args: [], signal: cancelSignal.signal });
+		cancelSignal.abort();
+		await assert.rejects(cancelledRun, /cancel/i);
+		assert.deepEqual({ added: cancelSignal.added, removed: cancelSignal.removed }, { added: 1, removed: 1 });
 	});
 });
