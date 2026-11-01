@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { OpenAICompatibleClient } from '../../src/ai/openai-compatible-client';
-import type { AiRequest } from '../../src/ai/openai-compatible-client';
+import { AiClientError, OpenAICompatibleClient } from '../../src/ai/openai-compatible-client';
+import type { AiRequest, DailyPlanRequest } from '../../src/ai/openai-compatible-client';
 import type { KnowledgeRules } from '../../src/rules/rule-schema';
 
 const rules = {
@@ -16,6 +16,12 @@ const rules = {
 
 const request: AiRequest = {
 	task: 'summarize', rules, ruleGuidance: 'Keep it concise.', files: [{ path: `${rules.scope.root}/note.md`, content: '# Note' }],
+};
+
+const dailyPlanRequest: DailyPlanRequest = {
+	date: '2026-11-01',
+	sources: [{ path: 'AI-Daily-Planner/01-规划规则.md', content: '# 规则' }],
+	extraConstraints: '不要安排超过六小时。',
 };
 
 void describe('OpenAICompatibleClient', () => {
@@ -61,5 +67,29 @@ void describe('OpenAICompatibleClient', () => {
 		});
 
 		await assert.rejects(client.analyze(request), /timed out/i);
+	});
+
+	void it('generates Markdown without putting the API key in the prompt or error', async () => {
+		let body = '';
+		const client = new OpenAICompatibleClient({
+			baseUrl: 'https://example.test/v1', model: 'test-model', apiKey: 'secret-api-key', timeoutMs: 1000,
+			fetchImpl: async (_input, init) => {
+				body = typeof init?.body === 'string' ? init.body : '';
+				return new Response(JSON.stringify({ choices: [{ message: { content: '```markdown\n# 2026-11-01 每日计划\n```' } }] }), { status: 200 });
+			},
+		});
+
+		assert.match(await client.generateDailyPlan(dailyPlanRequest), /2026-11-01/);
+		assert.doesNotMatch(body, /secret-api-key/);
+
+		const failing = new OpenAICompatibleClient({
+			baseUrl: 'https://example.test/v1', model: 'test-model', apiKey: 'secret-api-key', timeoutMs: 1000,
+			fetchImpl: async () => { throw new Error('request failed with secret-api-key'); },
+		});
+		await assert.rejects(failing.generateDailyPlan(dailyPlanRequest), (error: unknown) => {
+			assert.equal(error instanceof AiClientError, true);
+			assert.doesNotMatch(String(error), /secret-api-key/);
+			return true;
+		});
 	});
 });

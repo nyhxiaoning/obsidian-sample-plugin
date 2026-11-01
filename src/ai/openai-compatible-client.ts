@@ -1,5 +1,7 @@
 import type { KnowledgeRules } from '../rules/rule-schema';
 import { buildAiPrompt } from './prompt-builder';
+import { buildDailyPlanPrompt } from './daily-plan-prompt';
+import { parseDailyPlanResponse } from './daily-plan-response';
 import { parseAiSuggestions, type AiSuggestion } from './response-parser';
 
 export interface AiRequest {
@@ -9,8 +11,15 @@ export interface AiRequest {
 	files: Array<{ path: string; content: string }>;
 }
 
+export interface DailyPlanRequest {
+	date: string;
+	sources: Array<{ path: string; content: string }>;
+	extraConstraints: string;
+}
+
 export interface AiClient {
 	analyze(request: AiRequest, signal?: AbortSignal): Promise<AiSuggestion[]>;
+	generateDailyPlan(request: DailyPlanRequest, signal?: AbortSignal): Promise<string>;
 }
 
 export interface OpenAICompatibleClientOptions {
@@ -61,6 +70,10 @@ function responseContent(value: unknown): string {
 	return first.message.content;
 }
 
+function sanitizeErrorMessage(message: string, apiKey: string): string {
+	return message.replaceAll(apiKey, '[已隐藏]').replace(/(api[_ -]?key|token|secret)\s*[:=]\s*\S+/gi, '$1=[已隐藏]');
+}
+
 export class OpenAICompatibleClient implements AiClient {
 	private readonly fetchImpl: typeof fetch;
 
@@ -69,6 +82,16 @@ export class OpenAICompatibleClient implements AiClient {
 	}
 
 	async analyze(request: AiRequest, signal?: AbortSignal): Promise<AiSuggestion[]> {
+		const prompt = buildAiPrompt(request);
+		return this.requestCompletion(prompt, signal, (content) => parseAiSuggestions(content, { root: request.rules.scope.root }));
+	}
+
+	async generateDailyPlan(request: DailyPlanRequest, signal?: AbortSignal): Promise<string> {
+		const prompt = buildDailyPlanPrompt(request);
+		return this.requestCompletion(prompt, signal, parseDailyPlanResponse);
+	}
+
+	private async requestCompletion<T>(prompt: { system: string; user: string }, signal: AbortSignal | undefined, parse: (content: string) => T): Promise<T> {
 		if (!this.options.baseUrl || !this.options.model || !this.options.apiKey) {
 			throw new AiClientError('configuration', 'AI provider URL, model, and API key are required');
 		}
@@ -76,7 +99,6 @@ export class OpenAICompatibleClient implements AiClient {
 			throw new AiClientError('configuration', 'AI request timeout must be positive');
 		}
 
-		const prompt = buildAiPrompt(request);
 		const controller = new AbortController();
 		let timedOut = false;
 		const timeout = setTimeout(() => {
@@ -100,7 +122,8 @@ export class OpenAICompatibleClient implements AiClient {
 			} catch (error) {
 				if (timedOut) throw new AiClientError('timeout', 'AI request timed out');
 				if (signal?.aborted) throw new AiClientError('network', 'AI request was cancelled');
-				throw new AiClientError('network', `AI request failed: ${error instanceof Error ? error.message : 'network error'}`);
+				const message = error instanceof Error ? sanitizeErrorMessage(error.message, this.options.apiKey) : 'network error';
+				throw new AiClientError('network', `AI request failed: ${message}`);
 			}
 			if (!response.ok) {
 				if (response.status === 401 || response.status === 403) throw new AiClientError('unauthorized', 'AI provider rejected the API key');
@@ -114,7 +137,7 @@ export class OpenAICompatibleClient implements AiClient {
 			} catch {
 				throw new AiClientError('invalid_response', 'AI provider returned invalid JSON');
 			}
-			return parseAiSuggestions(responseContent(payload), { root: request.rules.scope.root });
+			return parse(responseContent(payload));
 		} finally {
 			clearTimeout(timeout);
 			signal?.removeEventListener('abort', abortCaller);

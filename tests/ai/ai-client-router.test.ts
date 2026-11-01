@@ -6,7 +6,7 @@ import { buildTestRequest, createCliProviderAdapters } from '../../src/ai/cli-pr
 import { DEFAULT_SETTINGS, type KnowledgeBaseSettings } from '../../src/settings-model';
 
 const request = buildTestRequest('000ai知识库价值写作体系');
-const emptySuggestions: AiClient = { analyze: async () => [] };
+const emptySuggestions: AiClient = { analyze: async () => [], generateDailyPlan: async () => '# plan' };
 
 function settings(provider: KnowledgeBaseSettings['aiProvider']): KnowledgeBaseSettings {
 	return structuredClone({ ...DEFAULT_SETTINGS, aiProvider: provider });
@@ -53,11 +53,24 @@ void describe('AiClientRouter', () => {
 		for (const kind of ['codex', 'claude'] as const) current.localCliProviders[kind].status = 'tested';
 		const router = new AiClientRouter({
 			getSettings: () => current,
-			localClientFactory: (kind) => ({ analyze: async () => { selected = kind; return []; } }),
+		localClientFactory: (kind) => ({ analyze: async () => { selected = kind; return []; }, generateDailyPlan: async () => '# plan' }),
 		});
 		await router.analyze(request);
 		current.aiProvider = 'claude';
 		await router.analyze(request);
 		assert.equal(selected, 'claude');
+	});
+
+	void it('routes daily plan generation to the tested CLI', async () => {
+		const current = settings('opencode');
+		current.localCliProviders.opencode.status = 'tested';
+		let generated = false;
+		const router = new AiClientRouter({
+			getSettings: () => current,
+			localClientFactory: () => ({ analyze: async () => [], generateDailyPlan: async () => { generated = true; return '# plan'; } }),
+		});
+
+		assert.equal(await router.generateDailyPlan({ date: '2026-11-01', sources: [], extraConstraints: '' }), '# plan');
+		assert.equal(generated, true);
 	});
 });

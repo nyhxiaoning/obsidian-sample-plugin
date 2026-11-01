@@ -1,6 +1,6 @@
 import { buildTestRequest, type CliProviderAdapter } from './cli-provider-adapters';
 import { LocalCliRunner, LocalCliRunnerError, type LocalCliRunOptions, type LocalCliRunResult } from './local-cli-runner';
-import { AiClientError, type AiClient, type AiRequest } from './openai-compatible-client';
+import { AiClientError, type AiClient, type AiRequest, type DailyPlanRequest } from './openai-compatible-client';
 import type { AiSuggestion } from './response-parser';
 
 export interface LocalCliRunnerLike {
@@ -32,7 +32,7 @@ function sanitizeDiagnostic(value: string): string {
 		.slice(0, 240);
 }
 
-function mapRunnerError(error: unknown, stage: '检测' | '测试请求' | '分析'): AiClientError {
+function mapRunnerError(error: unknown, stage: '检测' | '测试请求' | '分析' | '生成每日计划'): AiClientError {
 	if (error instanceof AiClientError) return error;
 	const kind = error instanceof LocalCliRunnerError || (typeof error === 'object' && error !== null && 'kind' in error)
 		? (error as { kind?: string }).kind
@@ -53,7 +53,7 @@ function mapRunnerError(error: unknown, stage: '检测' | '测试请求' | '分�
 	return safeError('provider', `${stage}进程失败${error instanceof Error ? `：${sanitizeDiagnostic(error.message)}` : ''}`);
 }
 
-function assertSuccessful(result: LocalCliRunResult, stage: '检测' | '测试请求' | '分析'): void {
+function assertSuccessful(result: LocalCliRunResult, stage: '检测' | '测试请求' | '分析' | '生成每日计划'): void {
 	if (result.exitCode !== 0) {
 		const diagnostic = sanitizeDiagnostic(result.stderr || `exitCode=${String(result.exitCode)}`);
 		if (/log in|login|authenticate|authentication|api key|unauthorized|未登录|认证/i.test(diagnostic)) {
@@ -111,6 +111,22 @@ export class LocalCliAiClient implements AiClient {
 			return this.parse(result, request);
 		} catch (error) {
 			throw mapRunnerError(error, '分析');
+		}
+	}
+
+	async generateDailyPlan(request: DailyPlanRequest, signal?: AbortSignal): Promise<string> {
+		const prompt = this.options.adapter.buildDailyPlanPrompt(request);
+		try {
+			const result = await this.runPrompt(false, prompt, signal);
+			assertSuccessful(result, '生成每日计划');
+			try {
+				return this.options.adapter.parseDailyPlanOutput(result.stdout, result.stderr);
+			} catch (error) {
+				if (error instanceof AiClientError && error.code === 'invalid_response') throw error;
+				throw safeError('invalid_response', 'AI CLI returned an invalid daily plan');
+			}
+		} catch (error) {
+			throw mapRunnerError(error, '生成每日计划');
 		}
 	}
 

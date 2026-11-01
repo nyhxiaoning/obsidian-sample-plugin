@@ -1,7 +1,7 @@
 import { createCliProviderAdapters, type CliProviderAdapters } from './cli-provider-adapters';
 import { LocalCliAiClient, type LocalCliRunnerLike } from './local-cli-client';
 import { LocalCliRunner, type LocalCliSpawn } from './local-cli-runner';
-import { AiClientError, OpenAICompatibleClient, type AiClient, type AiRequest } from './openai-compatible-client';
+import { AiClientError, OpenAICompatibleClient, type AiClient, type AiRequest, type DailyPlanRequest } from './openai-compatible-client';
 import type { AiSuggestion } from './response-parser';
 import type { AiProviderKind, KnowledgeBaseSettings } from '../settings-model';
 
@@ -48,5 +48,30 @@ export class AiClientRouter implements AiClient {
 		const client = this.options.localClientFactory?.(kind, settings, adapter, runner)
 			?? new LocalCliAiClient({ adapter, executable: provider.executablePath, cwd: this.options.cwd, timeoutMs: settings.requestTimeoutMs, runner });
 		return client.analyze(request, signal);
+	}
+
+	async generateDailyPlan(request: DailyPlanRequest, signal?: AbortSignal): Promise<string> {
+		const settings = this.options.getSettings();
+		if (settings.aiProvider === 'custom') {
+			return (this.options.customClientFactory?.(settings) ?? new OpenAICompatibleClient({
+				baseUrl: settings.apiBaseUrl,
+				model: settings.model,
+				apiKey: settings.apiKey,
+				timeoutMs: settings.requestTimeoutMs,
+			})).generateDailyPlan(request, signal);
+		}
+
+		const kind = settings.aiProvider;
+		const provider = settings.localCliProviders[kind];
+		if (provider.status !== 'tested') {
+			throw new AiClientError('configuration', '请先测试当前本机 AI 服务商，再生成每日计划');
+		}
+		const adapter = this.adapters[kind];
+		const runner = this.options.runner
+			?? this.options.runnerFactory?.(kind, settings)
+			?? new LocalCliRunner({ spawn: this.options.spawn, timeoutMs: settings.requestTimeoutMs });
+		const client = this.options.localClientFactory?.(kind, settings, adapter, runner)
+			?? new LocalCliAiClient({ adapter, executable: provider.executablePath, cwd: this.options.cwd, timeoutMs: settings.requestTimeoutMs, runner });
+		return client.generateDailyPlan(request, signal);
 	}
 }

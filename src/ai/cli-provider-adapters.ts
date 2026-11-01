@@ -1,5 +1,7 @@
 import { buildAiPrompt } from './prompt-builder';
-import { AiClientError, type AiRequest } from './openai-compatible-client';
+import { buildDailyPlanPrompt } from './daily-plan-prompt';
+import { parseDailyPlanResponse } from './daily-plan-response';
+import { AiClientError, type AiRequest, type DailyPlanRequest } from './openai-compatible-client';
 import { parseAiSuggestions, type AiSuggestion } from './response-parser';
 
 export interface CliProviderAdapter {
@@ -8,6 +10,8 @@ export interface CliProviderAdapter {
 	requestArgs(test: boolean, prompt?: string): string[];
 	buildPrompt(request: AiRequest, test?: boolean): string;
 	parseOutput(stdout: string, stderr: string, request: AiRequest): AiSuggestion[];
+	buildDailyPlanPrompt(request: DailyPlanRequest): string;
+	parseDailyPlanOutput(stdout: string, stderr: string): string;
 	parseVersion(stdout: string, stderr: string): string;
 }
 
@@ -87,6 +91,20 @@ function extractSuggestions(stdout: string, stderr: string, root: string): AiSug
 	throw invalidResponse();
 }
 
+function extractDailyPlan(stdout: string, stderr: string): string {
+	const lines = stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+	const values = [jsonValue(stdout), ...lines.map(jsonValue).filter((value) => value !== undefined)];
+	const candidates = [...values.flatMap(candidateStrings), stdout, stderr];
+	for (const candidate of candidates) {
+		try {
+			return parseDailyPlanResponse(candidate);
+		} catch {
+			// Continue searching for the final assistant message.
+		}
+	}
+	throw invalidResponse();
+}
+
 function parseVersion(stdout: string, stderr: string): string {
 	const firstLine = `${stdout}\n${stderr}`.split(/\r?\n/).map((line) => line.trim()).find(Boolean);
 	if (!firstLine) throw new AiClientError('invalid_response', 'AI CLI did not return a version');
@@ -107,6 +125,11 @@ function createAdapter(versionArgs: string[], promptTransport: 'stdin' | 'argv',
 			return `${prompt.system}\n\n${prompt.user}`;
 		})(),
 		parseOutput: (stdout, stderr, request) => extractSuggestions(stdout, stderr, request.rules.scope.root),
+		buildDailyPlanPrompt: (request) => {
+			const prompt = buildDailyPlanPrompt(request);
+			return `${prompt.system}\n\n${prompt.user}`;
+		},
+		parseDailyPlanOutput: extractDailyPlan,
 		parseVersion,
 	};
 }
