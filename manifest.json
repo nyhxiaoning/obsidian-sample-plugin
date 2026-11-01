@@ -1,9 +1,9 @@
 {
-	"id": "sample-plugin",
-	"name": "Knowledge Base Assistant",
+	"id": "prompt-daily-todo",
+	"name": "Prompt Daily Todo",
 	"version": "1.0.0",
 	"minAppVersion": "1.0.0",
-	"description": "Manage a local knowledge base with deterministic checks and confirmed AI suggestions.",
+	"description": "Manage a local knowledge base and generate confirmed daily plans from a local Markdown workflow.",
 	"author": "Obsidian",
 	"authorUrl": "https://obsidian.md",
 	"fundingUrl": "https://obsidian.md/pricing",

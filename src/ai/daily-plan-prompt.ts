@@ -19,7 +19,7 @@ export function buildDailyPlanPrompt(request: DailyPlanRequest): DailyPlanPrompt
 		extraConstraints: request.extraConstraints,
 		sources: request.sources,
 		outputRules: {
-			title: `# ${request.date} 每日计划`,
+			title: `# 每日 Todo - ${request.date}`,
 			format: 'Markdown',
 			numberedTaskLimit: 4,
 			hourLimit: 6,

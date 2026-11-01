@@ -16,4 +16,19 @@
 .knowledge-base-provider-card h4 { margin: 0 0 4px; }
 .knowledge-base-provider-card > p { color: var(--text-muted); margin: 4px 0 8px; }
 .knowledge-base-provider-status { overflow-wrap: anywhere; }
+.daily-todo-view { padding: 10px; }
+.daily-todo-view h2 { margin: 0 0 6px; font-size: var(--font-ui-medium); }
+.daily-todo-description, .daily-todo-status { color: var(--text-muted); }
+.daily-todo-field { margin: 10px 0; }
+.daily-todo-field label { display: block; margin-bottom: 5px; font-weight: var(--font-semibold); }
+.daily-todo-field input[type="date"], .daily-todo-field textarea, .daily-todo-preview { width: 100%; box-sizing: border-box; }
+.daily-todo-field textarea { min-height: 70px; resize: vertical; }
+.daily-todo-sources { margin: 12px 0; padding: 8px; background: var(--background-secondary); }
+.daily-todo-source { display: flex; gap: 6px; align-items: baseline; margin: 4px 0; overflow-wrap: anywhere; }
+.daily-todo-source.is-missing, .daily-todo-invalid { color: var(--text-error); }
+.daily-todo-source.is-available { color: var(--text-success); }
+.daily-todo-source-preview { max-height: 260px; overflow: auto; white-space: pre-wrap; background: var(--background-primary); padding: 8px; margin: 8px 0; }
+.daily-todo-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+.daily-todo-preview { min-height: 360px; resize: vertical; font-family: var(--font-monospace); }
+.daily-todo-validation { white-space: pre-wrap; margin: 8px 0; }
 @media (max-width: 420px) { .knowledge-base-header { display: block; } .knowledge-base-tabs button { flex: 1 1 45%; } }

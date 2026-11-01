@@ -62,9 +62,16 @@ void test('default settings expose the custom provider and stable local defaults
 	const settings: KnowledgeBaseSettings = normalizeSettings(DEFAULT_SETTINGS);
 
 	equal(settings.aiProvider, 'custom');
+	equal(settings.dailyPlannerRoot, '000ai知识库价值写作体系/AI-Daily-Planner');
 	equal(settings.requestTimeoutMs, 60000);
 	equal(settings.localCliProviders.codex.executablePath, resolveDefaultCliPaths().codex);
 	equal(settings.localCliProviders.opencode.executablePath, resolveDefaultCliPaths().opencode);
+});
+
+void test('preserves a persisted custom daily planner root', () => {
+	const settings = normalizeSettings({ dailyPlannerRoot: '个人计划/AI-Daily-Planner' });
+
+	equal(settings.dailyPlannerRoot, '个人计划/AI-Daily-Planner');
 });
 
 void test('resolving a legacy bare command clears its stale failure state', () => {

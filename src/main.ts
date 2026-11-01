@@ -8,7 +8,9 @@ import { AiClientRouter } from './ai/ai-client-router';
 import { LocalCliAiClient } from './ai/local-cli-client';
 import { createCliProviderAdapters } from './ai/cli-provider-adapters';
 import { DailyBackfillService } from './daily/daily-backfill-service';
+import { DailyPlannerService } from './daily/daily-planner-service';
 import { KnowledgeBaseView, VIEW_TYPE_KNOWLEDGE_BASE } from './views/knowledge-base-view';
+import { DailyTodoView, VIEW_TYPE_DAILY_TODO } from './views/daily-todo-view';
 import type { VaultMutationLike } from './types';
 import type { KnowledgeRules } from './rules/rule-schema';
 import { createDefaultKnowledgeRules } from './rules/default-rules';
@@ -24,6 +26,7 @@ export default class KnowledgeBasePlugin extends Plugin {
 		await this.loadSettings();
 		this.addSettingTab(new KnowledgeBaseSettingTab(this.app, this));
 		this.registerView(VIEW_TYPE_KNOWLEDGE_BASE, (leaf) => new KnowledgeBaseView(leaf, this.createViewServices()));
+		this.registerView(VIEW_TYPE_DAILY_TODO, (leaf) => new DailyTodoView(leaf, this.createDailyTodoServices()));
 		this.addRibbonIcon('book-open', zhCN.plugin.ribbon, () => {
 			void this.activateView();
 		});
@@ -31,6 +34,14 @@ export default class KnowledgeBasePlugin extends Plugin {
 			id: 'open-knowledge-base-assistant',
 			name: zhCN.plugin.command,
 			callback: () => void this.activateView(),
+		});
+		this.addRibbonIcon('calendar-check', zhCN.plugin.dailyTodoRibbon, () => {
+			void this.activateDailyTodoView();
+		});
+		this.addCommand({
+			id: 'open-daily-todo',
+			name: zhCN.plugin.dailyTodoCommand,
+			callback: () => void this.activateDailyTodoView(),
 		});
 	}
 
@@ -132,6 +143,26 @@ export default class KnowledgeBasePlugin extends Plugin {
 		};
 	}
 
+	private createDailyTodoServices() {
+		const aiClient = new AiClientRouter({
+			getSettings: () => this.settings,
+			cwd: (this.app.vault.adapter as typeof this.app.vault.adapter & { getBasePath?: () => string }).getBasePath?.() ?? '',
+		});
+		const read = async (path: string) => {
+			const file = this.app.vault.getAbstractFileByPath(path);
+			if (!(file instanceof TFile)) throw new Error(zhCN.common.fileNotFound(path));
+			return this.app.vault.read(file);
+		};
+		return {
+			aiClient,
+			dailyPlannerService: new DailyPlannerService({
+				read,
+				exists: async (path) => this.app.vault.getAbstractFileByPath(path) !== null,
+				create: (path, data) => this.app.vault.create(path, data),
+			}, this.settings.dailyPlannerRoot),
+		};
+	}
+
 	private createLocalCliClient(kind: Exclude<AiProviderKind, 'custom'>): LocalCliAiClient {
 		const adapter = createCliProviderAdapters()[kind];
 		const basePath = (this.app.vault.adapter as typeof this.app.vault.adapter & { getBasePath?: () => string }).getBasePath?.() ?? '';
@@ -155,6 +186,13 @@ export default class KnowledgeBasePlugin extends Plugin {
 		const leaf = existing ?? this.app.workspace.getRightLeaf(false);
 		if (!leaf) return;
 		await leaf.setViewState({ type: VIEW_TYPE_KNOWLEDGE_BASE, active: true });
+	}
+
+	async activateDailyTodoView(): Promise<void> {
+		const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_DAILY_TODO)[0];
+		const leaf = existing ?? this.app.workspace.getLeftLeaf(false);
+		if (!leaf) return;
+		await leaf.setViewState({ type: VIEW_TYPE_DAILY_TODO, active: true });
 	}
 }
 

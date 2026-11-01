@@ -14,6 +14,7 @@ export interface LocalCliProviderSettings {
 
 export interface KnowledgeBaseSettings {
 	knowledgeBaseRoot: string;
+	dailyPlannerRoot: string;
 	rulesPath: string;
 	indexScriptPath: string;
 	pythonPath: string;
@@ -27,6 +28,7 @@ export interface KnowledgeBaseSettings {
 
 export const DEFAULT_SETTINGS: KnowledgeBaseSettings = {
 	knowledgeBaseRoot: '000ai知识库价值写作体系',
+	dailyPlannerRoot: '000ai知识库价值写作体系/AI-Daily-Planner',
 	rulesPath: '000ai知识库价值写作体系/系统/知识库规则.md',
 	indexScriptPath: '000ai知识库价值写作体系/系统/generate-index.py',
 	pythonPath: '/usr/bin/python3',

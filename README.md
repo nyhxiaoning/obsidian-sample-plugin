@@ -1,6 +1,6 @@
-# Knowledge Base Assistant
+# Prompt Daily Todo
 
-Knowledge Base Assistant is an Obsidian desktop plugin for maintaining a structured knowledge base. It combines deterministic local checks and file operations with optional AI suggestions. All file changes require an explicit user confirmation.
+Prompt Daily Todo is an Obsidian desktop plugin for maintaining a structured knowledge base and generating daily plans from a local Markdown workflow. It combines deterministic local checks and file operations with optional AI suggestions. All file changes require an explicit user confirmation.
 
 插件默认使用简体中文界面，包含概览、规则、AI 整理和每日知识回填四个功能页。命令、配置键、规则 YAML 字段和技术路径保持原样，便于兼容已有配置。
 
@@ -12,6 +12,8 @@ The plugin opens a four-tab knowledge base panel:
 - **Rules** — edit `知识库规则.md` through structured settings, explanatory content, and the complete Markdown source. Invalid structured rules can still be saved as Markdown, while the most recent valid configuration remains active.
 - **AI organize** — manually analyze the current document by default, or switch to the current folder, for classification, summaries, related links, and proposed changes.
 - **Daily backfill** — review the day's raw material at the end of the day and run a manual weekly review for associations, conflicts, omissions, stale knowledge, and skill candidates.
+
+The daily planner uses the configured `AI-Daily-Planner` folder as its source workflow. It reads the planning rules, task pool, personal configuration, execution review, and Markdown template, then prepares a plan for review before saving it as `Daily/YYYY-MM-DD.md`. Existing daily files are never overwritten.
 
 ## Installation and development
 
@@ -42,6 +44,7 @@ Default paths are:
 
 ```text
 Knowledge base: 000ai知识库价值写作体系
+Daily planner:  000ai知识库价值写作体系/AI-Daily-Planner
 Rules:         000ai知识库价值写作体系/系统/知识库规则.md
 Index script: 000ai知识库价值写作体系/系统/generate-index.py
 Python:        /usr/bin/python3
@@ -59,7 +62,7 @@ The deterministic rule engine handles checks and confirmed operations such as fr
 
 插件支持五种 AI 服务商：一个自定义 API 服务商，以及四个本机命令行服务商：Codex、Claude、Gemini 和 OpenCode。四个本机 CLI 的安装、登录和账号权限由用户自行完成；插件不会代替用户安装或登录这些工具。
 
-在 **Settings → Community plugins → Knowledge base assistant** 的 AI 服务商设置中：
+在 **Settings → Community plugins → Prompt Daily Todo** 的 AI 服务商和每日计划设置中：
 
 1. 选择要配置的本机 CLI，并确认可执行文件路径。默认使用 PATH 中的命令名：`codex`、`claude`、`gemini`、`opencode`；如果命令不在 PATH 中，可以填写本机可执行文件的自定义路径。
 2. 先点击“检测命令”，确认命令存在并能返回版本信息。
@@ -68,7 +71,7 @@ The deterministic rule engine handles checks and confirmed operations such as fr
 
 本机 CLI 功能仅在 Obsidian 桌面端可用。自定义 API 服务商仍按下方说明配置。
 
-Configure the API base URL, model, and API key in **Settings → Community plugins → Knowledge base assistant**. The API key is stored in the local plugin data store.
+Configure the API base URL, model, and API key in **Settings → Community plugins → Prompt Daily Todo**. The API key is stored in the local plugin data store.
 
 AI analysis is manual. Opening, switching, or saving a note never sends content automatically. Before each request, the panel shows the selected files and content scope; the request is sent only after explicit upload confirmation.
 
@@ -79,7 +82,7 @@ AI output is treated as suggestions, not authority. Proposed patches and moves a
 Build the plugin, then copy these release files into your Vault:
 
 ```text
-<Vault>/.obsidian/plugins/<plugin-id>/
+<Vault>/.obsidian/plugins/prompt-daily-todo/
 ├── main.js
 ├── manifest.json
 └── styles.css       # if present
@@ -98,7 +101,7 @@ For each release:
 5. Attach `manifest.json`, `main.js`, and `styles.css` (when present) as individual release assets.
 6. Follow the [Obsidian plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines) and community-plugin submission process when publishing or updating the catalog entry.
 
-The plugin ID is a stable public identifier. Do not change it after release.
+The plugin ID is `prompt-daily-todo`, a stable public identifier. Do not change it after release.
 
 ## Documentation
 

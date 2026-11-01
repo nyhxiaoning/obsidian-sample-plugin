@@ -40,6 +40,12 @@ export class KnowledgeBaseSettingTab extends PluginSettingTab {
 			'knowledgeBaseRoot',
 		);
 		this.addTextSetting(
+			zhCN.settings.dailyPlannerRoot,
+			zhCN.settings.dailyPlannerRootDesc,
+			'000ai知识库价值写作体系/AI-Daily-Planner',
+			'dailyPlannerRoot',
+		);
+		this.addTextSetting(
 			zhCN.settings.rulesPath,
 			zhCN.settings.rulesPathDesc,
 			'000ai知识库价值写作体系/系统/知识库规则.md',
@@ -186,7 +192,7 @@ export class KnowledgeBaseSettingTab extends PluginSettingTab {
 		name: string,
 		description: string,
 		placeholder: string,
-		key: 'knowledgeBaseRoot' | 'rulesPath' | 'indexScriptPath' | 'pythonPath' | 'apiBaseUrl' | 'model',
+		key: 'knowledgeBaseRoot' | 'dailyPlannerRoot' | 'rulesPath' | 'indexScriptPath' | 'pythonPath' | 'apiBaseUrl' | 'model',
 	) {
 		new Setting(this.containerEl)
 			.setName(name)

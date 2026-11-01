@@ -33,6 +33,7 @@ void describe('daily plan AI flow', () => {
 		assert.match(prompt.system, /cannot execute, write, move, rename, or delete files/i);
 		assert.match(prompt.user, /01-规划规则\.md/);
 		assert.match(prompt.user, /下午需要参加会议/);
+		assert.match(prompt.user, /# 每日 Todo - 2026-11-01/);
 		assert.doesNotMatch(`${prompt.system}\n${prompt.user}`, /secret-api-key/);
 	});
 
