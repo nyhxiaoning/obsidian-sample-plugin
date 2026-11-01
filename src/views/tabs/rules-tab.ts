@@ -29,9 +29,19 @@ async function loadRules(panes: Record<'settings' | 'body' | 'source', HTMLEleme
 	try { markdown = await context.app.vault.read(abstractFile as import('obsidian').TFile); } catch { panes.source.createEl('p', { text: zhCN.rules.readFailed }); return; }
 	const result = context.ruleStore.validateDocument(markdown);
 	const block = extractRuleBlock(markdown);
+	panes.source.createEl('h4', { text: zhCN.rules.sourcePaneTitle });
+	panes.source.createEl('p', { text: zhCN.rules.sourcePaneDesc });
 	const source = panes.source.createEl('textarea', { cls: 'knowledge-base-source-editor' });
 	source.value = markdown;
 	const settings = panes.settings;
+	settings.createEl('h4', { text: zhCN.rules.sourceTitle });
+	settings.createEl('p', { text: zhCN.rules.sourceDesc });
+	const activeState = await context.ruleStore.loadEffectiveRuleState();
+	settings.createEl('h4', { text: zhCN.rules.activeTitle });
+	settings.createEl('p', { text: zhCN.rules.activeDesc });
+	settings.createEl('p', { text: activeState
+		? zhCN.rules.activeState(activeState.schemaVersion, activeState.rules.scope.root, activeState.activatedAt, activeState.documentHash)
+		: zhCN.rules.inactiveState });
 	const status = settings.createEl('p', { text: '' });
 	const saveSource = async (): Promise<void> => {
 		const file = context.app.vault.getAbstractFileByPath(context.plugin.settings.rulesPath);
@@ -73,9 +83,10 @@ async function loadRules(panes: Record<'settings' | 'body' | 'source', HTMLEleme
 	}
 	const rules = result.rules;
 	const checkboxes: Array<[keyof KnowledgeRules['checks'], string]> = [['fileName', zhCN.rules.fileNames], ['directory', zhCN.rules.directories], ['source', zhCN.rules.sourceMetadata], ['duplicateTopic', zhCN.rules.duplicateTopics], ['relatedLinks', zhCN.rules.relatedLinks]];
-	settings.createEl('p', { text: zhCN.rules.structuredDesc });
+	settings.createEl('p', { text: zhCN.rules.settingsDesc });
 	for (const [key, label] of checkboxes) new Setting(settings).setName(label).addToggle((toggle) => toggle.setValue(rules.checks[key]).onChange((value) => { rules.checks[key] = value; }));
 	const body = panes.body;
+	body.createEl('h4', { text: zhCN.rules.bodyTitle });
 	body.createEl('p', { text: zhCN.rules.bodyDesc });
 	const bodyEditor = body.createEl('textarea', { cls: 'knowledge-base-source-editor' });
 	bodyEditor.value = block ? `${markdown.slice(0, block.start)}${markdown.slice(block.end)}`.trim() : markdown;

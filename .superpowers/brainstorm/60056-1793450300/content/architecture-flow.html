@@ -1,0 +1,51 @@
+<h2>推荐架构：单一规则源 + 双执行层</h2>
+<p class="subtitle">紫色表示规则来源，蓝色表示插件内部模块，橙色表示外部 AI，绿色表示需要用户确认的落盘动作。</p>
+
+<div class="mockup">
+  <div class="mockup-header">组件与数据流</div>
+  <div class="mockup-body" style="padding:20px;background:#f7f7f8">
+    <div style="max-width:900px;margin:auto;text-align:center;color:#333">
+      <div style="display:inline-block;padding:14px 22px;border:2px solid #7656c9;border-radius:10px;background:#f0ebff;min-width:280px">
+        <b>知识库规则.md · 唯一权威来源</b><br>
+        <span style="font-size:12px;color:#666">结构化 YAML 规则块 + 自然语言说明正文</span>
+      </div>
+      <div style="font-size:24px;color:#888;line-height:1.4">↓</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;text-align:left">
+        <div style="padding:14px;border:2px solid #4b82c3;border-radius:10px;background:#edf6ff">
+          <b>规则加载与校验器</b><br>
+          <span style="font-size:12px;color:#666">解析固定标记；校验版本、字段和动作；失败时保留最近一次有效规则。</span>
+        </div>
+        <div style="padding:14px;border:2px solid #4b82c3;border-radius:10px;background:#edf6ff">
+          <b>R1 规则编辑器</b><br>
+          <span style="font-size:12px;color:#666">规则设置 / 说明正文 / 源文件；保存时即时校验并显示错误位置。</span>
+        </div>
+      </div>
+      <div style="font-size:24px;color:#888;line-height:1.4">↓</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;text-align:left">
+        <div style="padding:14px;border:2px solid #4b82c3;border-radius:10px;background:#edf6ff">
+          <b>确定性规则引擎 · 本地</b><br>
+          <span style="font-size:12px;color:#666">检查路径、命名、Frontmatter、状态、来源和双链；生成补字段、套模板、移动文件、更新索引动作。</span>
+        </div>
+        <div style="padding:14px;border:2px solid #c47d2c;border-radius:10px;background:#fff5e8">
+          <b>AI 建议层 · 手动触发</b><br>
+          <span style="font-size:12px;color:#666">OpenAI 兼容 API；仅上传用户选择范围；输出分类、摘要、关联和内容修改建议，不直接写文件。</span>
+        </div>
+      </div>
+      <div style="font-size:24px;color:#888;line-height:1.4">↓ 合并为统一建议模型</div>
+      <div style="padding:14px;border:2px solid #4b82c3;border-radius:10px;background:#edf6ff;text-align:left">
+        <b>变更计划生成器</b><br>
+        <span style="font-size:12px;color:#666">将检查结果与 AI 建议规范化为：原因、目标文件、前后差异、风险等级、可执行动作。</span>
+      </div>
+      <div style="font-size:24px;color:#888;line-height:1.4">↓</div>
+      <div style="padding:14px;border:2px solid #30915c;border-radius:10px;background:#ecfbf2;text-align:left">
+        <b>变更预览与确认</b><br>
+        <span style="font-size:12px;color:#666">用户逐项勾选后，才通过 Obsidian Vault API 写入、移动或更新；完成后按需重新生成索引。</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pros-cons" style="margin-top:18px">
+  <div class="pros"><h4>边界清晰</h4><ul><li>本地规则决定“能否安全执行”</li><li>AI 负责需要语义理解的建议</li><li>用户始终掌握最终写入权</li></ul></div>
+  <div class="cons"><h4>首版约束</h4><ul><li>只支持预定义的结构化规则类型</li><li>AI 不拥有任意文件操作能力</li><li>Python 索引能力仅桌面端可用</li></ul></div>
+</div>

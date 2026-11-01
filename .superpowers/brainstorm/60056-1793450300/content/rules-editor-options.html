@@ -1,0 +1,46 @@
+<h2>“规则”页签采用哪种编辑方式？</h2>
+<p class="subtitle">三种方式都会把修改保存回同一个《知识库规则.md》，区别在于日常编辑是表单优先还是源码优先。</p>
+
+<div class="cards">
+  <div class="card" data-choice="r1" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:14px;background:#f7f7f8">
+      <div style="border:1px solid #bbb;border-radius:8px;background:#fff;overflow:hidden;font-size:11px;color:#444">
+        <div style="padding:8px 10px;border-bottom:1px solid #ddd;display:flex;justify-content:space-between"><b>规则</b><span style="color:#238636">● 已保存</span></div>
+        <div style="display:flex;border-bottom:1px solid #ddd;text-align:center"><div style="flex:1;padding:7px;background:#ece7ff;color:#5d3bb5"><b>规则设置</b></div><div style="flex:1;padding:7px">说明正文</div><div style="flex:1;padding:7px">源文件</div></div>
+        <div style="padding:10px">
+          <div style="border:1px solid #ddd;border-radius:6px;padding:8px;margin-bottom:7px"><b>Frontmatter 检查</b><span style="float:right;color:#238636">开启 ◉</span><br><span style="color:#777">必填：title · status · created · updated</span></div>
+          <div style="border:1px solid #ddd;border-radius:6px;padding:8px;margin-bottom:7px"><b>允许状态</b><br><span style="display:inline-block;margin-top:5px;padding:3px 5px;background:#eee;border-radius:4px">draft</span> <span style="padding:3px 5px;background:#eee;border-radius:4px">reviewing</span> <span style="padding:3px 5px;background:#eee;border-radius:4px">verified</span></div>
+          <div style="border:1px solid #ddd;border-radius:6px;padding:8px"><b>文件操作</b><span style="float:right;color:#238636">确认后执行</span><br><span style="color:#777">补字段 · 套模板 · 移动 · 更新索引</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body"><h3>R1 · 表单 + 正文 + 源文件（推荐）</h3><p>常用规则用控件安全编辑，说明正文用 Markdown 编辑器维护；高级用户仍可查看完整源文件。</p></div>
+  </div>
+
+  <div class="card" data-choice="r2" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:14px;background:#f7f7f8">
+      <div style="border:1px solid #bbb;border-radius:8px;background:#fff;overflow:hidden;font-size:11px;color:#444">
+        <div style="padding:8px 10px;border-bottom:1px solid #ddd"><b>规则源文件</b></div>
+        <div style="padding:10px">
+          <div style="border:1px solid #ddd;border-radius:6px;padding:8px;min-height:156px;font-family:monospace;color:#666;line-height:1.45">```knowledge-rules<br>version: 1<br>frontmatter:<br>&nbsp;&nbsp;required: [title, status]<br>operations:<br>&nbsp;&nbsp;move: confirm<br>```<br><br># 个人 AI 知识库管理规则<br>本知识库不是简单的……</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body"><h3>R2 · 纯 Markdown 源码</h3><p>能力最直接、实现最简单，但 YAML 缩进或字段拼写错误可能导致规则失效。</p></div>
+  </div>
+
+  <div class="card" data-choice="r3" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:14px;background:#f7f7f8">
+      <div style="border:1px solid #bbb;border-radius:8px;background:#fff;overflow:hidden;font-size:11px;color:#444">
+        <div style="padding:8px 10px;border-bottom:1px solid #ddd"><b>规则编辑器</b></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;min-height:177px">
+          <div style="padding:8px;border-right:1px solid #ddd"><b>结构化规则</b><br><br>Frontmatter　◉<br><br>命名规范　　◉<br><br>移动需确认　◉<br><br><button>验证规则</button></div>
+          <div style="padding:8px;font-family:monospace;color:#666"><b style="font-family:initial;color:#444">实时源码</b><br><br>required:<br>&nbsp;- title<br>&nbsp;- status<br><br>move:<br>&nbsp;confirm: true</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body"><h3>R3 · 表单与源码分栏同步</h3><p>结构和源码同时可见，适合宽屏调试；在 Obsidian 侧边栏里可读空间较小。</p></div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:18px">请选择一种。推荐 R1：既满足“直接编辑规则文档”，又避免日常操作破坏机器可执行配置。</p>

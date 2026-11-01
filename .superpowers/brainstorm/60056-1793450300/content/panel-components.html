@@ -1,0 +1,52 @@
+<h2>分页任务面板：组件设计</h2>
+<p class="subtitle">一个 Obsidian ItemView，三个一级页签。敏感配置留在 Obsidian 设置页，不占用日常工作区。</p>
+
+<div class="split" style="align-items:stretch">
+  <div class="mockup">
+    <div class="mockup-header">1 · 概览</div>
+    <div class="mockup-body" style="padding:12px;font-size:12px">
+      <div style="display:flex;border:1px solid #ddd;border-radius:6px 6px 0 0;overflow:hidden;text-align:center"><div style="flex:1;padding:7px;background:#ece7ff;color:#5d3bb5"><b>概览</b></div><div style="flex:1;padding:7px">规则</div><div style="flex:1;padding:7px">AI 整理</div></div>
+      <div style="border:1px solid #ddd;border-top:0;padding:9px;border-radius:0 0 6px 6px">
+        <b>当前上下文</b><br><span style="color:#777">notebooks / 000ai知识库价值写作体系</span><br><span style="color:#777">当前文档：Agent-Memory长期记忆.md</span>
+      </div>
+      <div style="border:1px solid #e0b767;border-radius:6px;padding:9px;margin-top:8px"><b>索引状态</b><span style="float:right;color:#b06b00">已过期</span><br><span style="color:#777">检查输出：索引已过期，需重新生成。</span><br><button style="margin-top:7px">检查索引</button> <button>重新生成</button><br><button style="margin-top:5px">打开 README</button> <button>打开知识库文件夹</button></div>
+      <div style="border:1px solid #ddd;border-radius:6px;padding:9px;margin-top:8px"><b>系统状态</b><br><span style="color:#238636">✓ 规则有效</span><br><span style="color:#238636">✓ AI 提供商已配置</span><br><span style="color:#777">最近一次操作：未执行</span></div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">2 · 规则</div>
+    <div class="mockup-body" style="padding:12px;font-size:12px">
+      <div style="display:flex;border:1px solid #ddd;border-radius:6px 6px 0 0;overflow:hidden;text-align:center"><div style="flex:1;padding:7px">规则设置</div><div style="flex:1;padding:7px;background:#ece7ff;color:#5d3bb5"><b>说明正文</b></div><div style="flex:1;padding:7px">源文件</div></div>
+      <div style="border:1px solid #ddd;border-top:0;padding:9px;border-radius:0 0 6px 6px;min-height:145px">
+        <b>个人 AI 知识库管理规则</b><br><br>
+        <span style="color:#777">知识库不是简单的文件存储系统，而是一个持续积累、整理、验证和迭代的……</span><br><br>
+        <span style="color:#777">## 目录管理规范</span><br>
+        <span style="color:#777">## 知识卡片标准</span><br>
+        <span style="color:#777">## 文件安全与变更规范</span>
+      </div>
+      <div style="margin-top:8px;padding:8px;border-radius:6px;background:#ecfbf2;color:#276b45">当前生效：规则版本 1 · 校验通过</div>
+      <div style="margin-top:7px"><button>验证</button> <button>保存规则</button> <button>恢复有效版本</button></div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">3 · AI 整理</div>
+    <div class="mockup-body" style="padding:12px;font-size:12px">
+      <div style="border:1px solid #ddd;border-radius:6px;padding:9px"><b>处理范围</b><br><label><input type="radio" checked> 当前文档</label>　<label><input type="radio"> 当前文件夹</label><br><span style="color:#777">文件夹模式：12 个 Markdown 文件</span></div>
+      <div style="border:1px solid #ddd;border-radius:6px;padding:9px;margin-top:8px"><b>执行内容</b><br>☑ 本地规则检查<br>☑ 分类与保存位置建议<br>☑ 生成摘要<br>☑ 关联知识建议<br><br>☑ 显示上传内容预览</div>
+      <button style="margin-top:8px">分析当前文档</button>
+      <div style="border:1px solid #ddd;border-radius:6px;padding:9px;margin-top:8px"><b>分析结果</b><br><span style="color:#777">本地检查 2 项 · AI 建议 3 项</span><br><br>建议移至：<code>02-资产/技术知识/</code><br>建议补充：source、updated<br><button style="margin-top:7px">查看变更预览</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:20px">
+  <h3>设置页（不放在功能面板）</h3>
+  <p>知识库根目录、Python 路径、索引脚本相对路径、规则文档相对路径、API 地址、模型名、API 密钥、请求超时。密钥只显示为密码框，不写入 Markdown。</p>
+</div>
+
+<div class="section">
+  <h3>统一安全规则</h3>
+  <p>索引生成可直接执行；任何 Markdown 内容修改或文件移动必须进入差异预览。首版不提供删除、批量重命名和后台自动上传。</p>
+</div>

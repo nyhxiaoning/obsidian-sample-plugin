@@ -10,6 +10,7 @@ import { createChangePreview, type ChangePreview } from '../../changes/diff-prev
 import type { KnowledgeRules } from '../../rules/rule-schema';
 import type { OperationRecord } from '../../types';
 import { zhCN, suggestionKindLabel } from '../../i18n/zh-CN';
+import { selectMarkdownPaths, type FileSelectionScope } from './file-selection';
 
 export interface AiOrganizeContext { app: App; plugin: KnowledgeBasePlugin; rootPath: string; effectiveRules: KnowledgeRules | null; ruleStore: RuleStore; checkEngine: LocalCheckEngine; aiClient: AiClient; changeApplier: ChangeApplier; }
 
@@ -28,17 +29,26 @@ export function renderAiOrganizeTab(container: HTMLElement, context: AiOrganizeC
 	const status = container.createEl('p', { text: zhCN.ai.noUpload });
 	const results = container.createDiv();
 	let prepared: Array<{ path: string; content: string }> = [];
+	void runUi(status, async () => {
+		const rules = await context.ruleStore.loadEffectiveRules();
+		if (rules) status.setText(zhCN.ai.rulesLoaded(rules.schemaVersion, rules.scope.root));
+	});
 	new Setting(container).setName(zhCN.ai.prepareUpload).addButton((button) => button.setButtonText(zhCN.ai.preview).setCta().onClick(async () => {
 		await runUi(status, async () => {
-			prepared = await selectedFiles(context.app, context.rootPath, scope.value);
+			const selection = await selectedFiles(context.app, context.rootPath, scope.value as FileSelectionScope);
+			prepared = selection.files;
 			preview.setText(prepared.length ? prepared.map((file) => `--- ${file.path} ---\n${file.content}`).join('\n\n') : zhCN.ai.noFile);
 			confirmation.value = false;
-			status.setText(prepared.length ? zhCN.ai.filesReady(prepared.length) : zhCN.ai.noFile);
+			status.setText(prepared.length ? zhCN.ai.filesReady(prepared.length) : selection.reason === 'ready' ? zhCN.ai.noFile : selectionMessage(selection.reason));
 		});
 	})).addButton((button) => button.setButtonText(zhCN.ai.analyzeAfterConfirmation).onClick(async () => {
 		await runUi(status, async () => {
-			const rules = context.effectiveRules ?? await context.ruleStore.loadEffectiveRules();
-			if (!rules || prepared.length === 0 || !confirmation.value) throw new Error(zhCN.ai.analyzeError);
+			// Always read the latest activated snapshot so saving rules in the Rules tab
+			// takes effect without requiring the view to be recreated.
+			const rules = await context.ruleStore.loadEffectiveRules();
+			if (!rules) throw new Error(zhCN.ai.noEffectiveRules);
+			if (prepared.length === 0) throw new Error(zhCN.ai.prepareBeforeAnalyze);
+			if (!confirmation.value) throw new Error(zhCN.ai.confirmBeforeAnalyze);
 			const operation = await startOperation(context.ruleStore, String(task.value), scope.value, rules.schemaVersion);
 			try {
 				const suggestions = await context.aiClient.analyze({ task: task.value as never, rules, ruleGuidance: 'Follow the active rules document.', files: prepared });
@@ -53,10 +63,23 @@ export function renderAiOrganizeTab(container: HTMLElement, context: AiOrganizeC
 	}));
 }
 
-async function selectedFiles(app: App, root: string, scope: string): Promise<Array<{ path: string; content: string }>> {
-		const active = app.workspace.getActiveFile();
-		const files = app.vault.getMarkdownFiles().filter((file) => file.path === active?.path || (scope === 'folder' && active?.parent?.path === file.parent?.path));
-		return Promise.all(files.filter((file) => file.path === root || file.path.startsWith(`${root}/`)).map(async (file) => ({ path: file.path, content: await app.vault.read(file) })));
+async function selectedFiles(app: App, root: string, scope: FileSelectionScope): Promise<{ files: Array<{ path: string; content: string }>; reason: 'ready' | 'no-active-document' | 'outside-root' | 'no-folder-files' }> {
+	const markdownFiles = app.vault.getMarkdownFiles();
+	const selection = selectMarkdownPaths(markdownFiles.map((file) => file.path), app.workspace.getActiveFile()?.path, scope, root);
+	if (selection.reason !== 'ready') return { files: [], reason: selection.reason };
+	const filesByPath = new Map(markdownFiles.map((file) => [file.path, file]));
+	return {
+		files: await Promise.all(selection.paths.map(async (path) => {
+			const file = filesByPath.get(path);
+			if (!file) throw new Error(zhCN.common.fileNotFound(path));
+			return { path: file.path, content: await app.vault.read(file) };
+		})),
+		reason: 'ready',
+	};
+}
+
+function selectionMessage(reason: 'no-active-document' | 'outside-root' | 'no-folder-files'): string {
+	return reason === 'no-active-document' ? zhCN.ai.noActiveMarkdown : reason === 'outside-root' ? zhCN.ai.outsideRoot : zhCN.ai.noFolderFiles;
 }
 
 function renderSuggestions(container: HTMLElement, suggestions: AiSuggestion[], context: AiOrganizeContext, rules: KnowledgeRules, status: HTMLElement): void {

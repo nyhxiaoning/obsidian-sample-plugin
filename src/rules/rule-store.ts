@@ -17,13 +17,18 @@ export class RuleStore {
 	constructor(private readonly persistence: RuleStorePersistence) {}
 
 	async loadEffectiveRules(): Promise<KnowledgeRules | null> {
+		const state = await this.loadEffectiveRuleState();
+		return state?.rules ?? null;
+	}
+
+	async loadEffectiveRuleState(): Promise<RuleActivationState | null> {
 		const data = await this.persistence.loadData();
 		if (data === null || typeof data !== 'object' || !('ruleActivation' in data)) return null;
 
 		const state = data.ruleActivation;
 		if (state === null || typeof state !== 'object' || !('rules' in state)) return null;
 		const result = validateRules(state.rules);
-		return result.valid ? result.rules : null;
+		return result.valid ? state as RuleActivationState : null;
 	}
 
 	validateDocument(markdown: string): DocumentValidationResult {

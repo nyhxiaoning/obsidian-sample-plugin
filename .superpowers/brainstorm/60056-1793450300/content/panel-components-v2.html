@@ -1,0 +1,61 @@
+<h2>分页任务面板 V2：增加“每日回填”</h2>
+<p class="subtitle">四个一级页签：概览、规则、AI 整理、每日回填。每日回填把“记录 → 整理 → 迭代”变成可重复执行的工作流。</p>
+
+<div class="mockup" style="max-width:760px;margin:auto">
+  <div class="mockup-header">知识库助手 · 每日回填</div>
+  <div class="mockup-body" style="padding:14px;font-size:12px;background:#fafafa">
+    <div style="display:flex;border:1px solid #ddd;border-radius:7px;overflow:hidden;text-align:center;background:white">
+      <div style="flex:1;padding:8px">概览</div>
+      <div style="flex:1;padding:8px">规则</div>
+      <div style="flex:1;padding:8px">AI 整理</div>
+      <div style="flex:1.2;padding:8px;background:#ece7ff;color:#5d3bb5"><b>每日回填</b></div>
+    </div>
+
+    <div style="padding:11px;margin-top:10px;border:1px solid #ddd;border-radius:7px;background:white">
+      <div style="display:flex;justify-content:space-between"><b>今日知识回填</b><span style="color:#777">2026-10-31</span></div>
+      <div style="height:5px;background:#eee;border-radius:4px;margin:9px 0"><div style="width:34%;height:100%;background:#7656c9;border-radius:4px"></div></div>
+      <span style="color:#777">已发现 8 个今日变更文件 · 尚未执行 AI 整理</span>
+    </div>
+
+    <div style="display:grid;grid-template-columns:42px 1fr;gap:9px;margin-top:10px">
+      <div style="width:34px;height:34px;border-radius:50%;background:#edf6ff;border:2px solid #4b82c3;display:flex;align-items:center;justify-content:center"><b>1</b></div>
+      <div style="padding:10px;border:1px solid #ddd;border-radius:7px;background:white">
+        <div style="display:flex;justify-content:space-between"><b>白天 · 收集原始素材</b><span style="color:#238636">进行中</span></div>
+        <p style="margin:6px 0;color:#666">汇总今天创建或修改的想法、问题和项目进展，不改变原文件。</p>
+        <div style="padding:7px;background:#f7f7f8;border-radius:5px">00-灵感库：3　·　01-项目：4　·　其他：1</div>
+        <button style="margin-top:7px">查看今日变更</button> <button>排除文件</button>
+      </div>
+
+      <div style="width:34px;height:34px;border-radius:50%;background:#fff5e8;border:2px solid #c47d2c;display:flex;align-items:center;justify-content:center"><b>2</b></div>
+      <div style="padding:10px;border:1px solid #ddd;border-radius:7px;background:white">
+        <div style="display:flex;justify-content:space-between"><b>工作结束 · AI 整理当天内容</b><span style="color:#b06b00">待执行</span></div>
+        <p style="margin:6px 0;color:#666">按当前规则生成分类、摘要、知识卡片、关联和保存位置建议。</p>
+        <label><input type="checkbox" checked> 生成知识卡片候选</label>　<label><input type="checkbox" checked> 合并重复主题</label><br>
+        <button style="margin-top:7px">预览上传范围</button> <button>开始今日整理</button>
+      </div>
+
+      <div style="width:34px;height:34px;border-radius:50%;background:#ecfbf2;border:2px solid #30915c;display:flex;align-items:center;justify-content:center"><b>3</b></div>
+      <div style="padding:10px;border:1px solid #ddd;border-radius:7px;background:white">
+        <div style="display:flex;justify-content:space-between"><b>每周 · 知识迭代检查</b><span style="color:#777">本周未执行</span></div>
+        <p style="margin:6px 0;color:#666">检查关联、重复、冲突、遗漏、过时状态，以及可沉淀为技能的重复工作。</p>
+        <div style="padding:7px;background:#f7f7f8;border-radius:5px">输出：周检报告 + 周复盘草稿 + 建议变更清单</div>
+        <button style="margin-top:7px">运行本周检查</button> <button>打开最近周报</button>
+      </div>
+    </div>
+
+    <div style="padding:10px;margin-top:10px;border:1px solid #ddd;border-radius:7px;background:white">
+      <b>待确认的回填结果</b><span style="float:right;color:#777">0 项</span><br>
+      <span style="color:#777">AI 输出只进入候选区；选择结果后，再查看 Markdown 差异并确认写入。</span>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:20px">
+  <h3>数据口径</h3>
+  <p>“今日变更”按 Vault 文件的修改时间筛选，默认只扫描 <code>000ai知识库价值写作体系/</code>。用户可排除文件；插件保存最近一次日整理和周检查时间，用于显示进度，但不自动触发 AI。</p>
+</div>
+
+<div class="section">
+  <h3>与“AI 整理”页的区别</h3>
+  <p><b>AI 整理</b>面向当前文件或当前文件夹的即时任务；<b>每日回填</b>按日期汇总跨目录变更，组织成每日收集、下班整理和每周迭代的周期性工作流。二者复用同一套分析、预览和确认模块。</p>
+</div>

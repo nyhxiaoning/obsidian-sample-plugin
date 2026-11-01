@@ -1,0 +1,57 @@
+<h2>知识库功能面板：选择布局方向</h2>
+<p class="subtitle">重点比较日常操作效率、规则编辑空间，以及在 Obsidian 侧边栏窄宽度下的可用性。</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:14px;background:#f7f7f8">
+      <div style="border:1px solid #bbb;border-radius:8px;background:white;overflow:hidden;font-size:11px;color:#444">
+        <div style="padding:8px 10px;border-bottom:1px solid #ddd;display:flex;justify-content:space-between"><b>知识库助手</b><span style="color:#b06b00">● 索引已过期</span></div>
+        <div style="display:flex;border-bottom:1px solid #ddd;text-align:center"><div style="flex:1;padding:7px;background:#ece7ff;color:#5d3bb5"><b>概览</b></div><div style="flex:1;padding:7px">规则</div><div style="flex:1;padding:7px">AI 整理</div></div>
+        <div style="padding:10px">
+          <div style="border:1px solid #ddd;border-radius:6px;padding:8px;margin-bottom:8px"><b>当前文档</b><br><span style="color:#777">Agent-Memory长期记忆.md</span></div>
+          <div style="border:1px solid #e0b767;border-radius:6px;padding:8px;margin-bottom:8px"><b>索引需要更新</b><br><span style="color:#777">上次检查：刚刚</span><br><button style="margin-top:6px">重新生成</button> <button>打开 README</button></div>
+          <div style="border:1px solid #ddd;border-radius:6px;padding:8px"><b>规则检查</b><br><span style="color:#777">2 个必填字段缺失 · 1 条命名建议</span><br><button style="margin-top:6px">查看报告</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A · 分页任务面板（推荐）</h3>
+      <p>概览、规则编辑、AI 整理各占一个页签。最适合 Obsidian 右侧边栏，也能在主区域展开。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:14px;background:#f7f7f8">
+      <div style="border:1px solid #bbb;border-radius:8px;background:white;overflow:hidden;font-size:11px;color:#444">
+        <div style="padding:8px 10px;border-bottom:1px solid #ddd"><b>知识库工作台</b></div>
+        <div style="display:grid;grid-template-columns:80px 1fr 110px;min-height:175px">
+          <div style="padding:8px;border-right:1px solid #ddd;background:#fafafa"><b>概览</b><br><br>索引<br><br>规则<br><br>AI 整理</div>
+          <div style="padding:8px"><b>规则编辑器</b><div style="margin-top:7px;border:1px solid #ddd;padding:7px;min-height:108px;font-family:monospace;color:#777"># 知识库规则<br><br>status:<br> - draft<br> - reviewing<br><br>...</div></div>
+          <div style="padding:8px;border-left:1px solid #ddd"><b>实时检查</b><br><br><span style="color:#b06b00">⚠ 缺少 source</span><br><br><span style="color:#238636">✓ 目录正确</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B · 三栏工作台</h3>
+      <p>导航、编辑器和检查结果同时可见，适合宽屏主视图；侧边栏中会显得拥挤。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:14px;background:#f7f7f8">
+      <div style="border:1px solid #bbb;border-radius:8px;background:white;overflow:hidden;font-size:11px;color:#444">
+        <div style="padding:8px 10px;border-bottom:1px solid #ddd"><b>整理当前文档</b></div>
+        <div style="padding:10px">
+          <div style="display:flex;justify-content:space-between;color:#777;margin-bottom:10px"><span style="color:#5d3bb5"><b>1 检查</b></span><span>2 AI 建议</span><span>3 预览</span><span>4 应用</span></div>
+          <div style="border:1px solid #ddd;border-radius:6px;padding:10px;min-height:105px"><b>选择执行内容</b><br><br>☑ 检查 Frontmatter<br>☑ 检查文件位置<br>☑ 生成摘要与分类建议<br>☐ 查找关联知识<br><br><button style="margin-top:9px">开始分析 →</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C · 引导式流程</h3>
+      <p>按检查、建议、预览、应用逐步执行，安全感最强；查看索引或快速编辑规则时步骤偏多。</p>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:18px">请选择一个主要布局。无论选择哪种，涉及文件移动或写入时都会经过“变更预览 → 用户确认”。</p>
