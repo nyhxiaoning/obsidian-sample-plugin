@@ -190,6 +190,7 @@ export const zhCN = {
 		extraConstraints: '额外约束',
 		extraConstraintsPlaceholder: '例如：下午有会议，今天只安排半天深度工作。',
 		checkSources: '检查资料',
+		recheckSources: '重新检查资料',
 		sources: '规划资料',
 		available: '已找到',
 		missing: '缺失',

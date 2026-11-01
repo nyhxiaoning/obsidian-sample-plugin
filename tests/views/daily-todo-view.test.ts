@@ -23,6 +23,9 @@ function canGenerateDailyTodo(state: ReturnType<typeof createDailyTodoState>): b
 function getDailyTodoSaveGuard(state: ReturnType<typeof createDailyTodoState>): { allowed: boolean } {
 	return { allowed: Boolean(state.preview.trim() && state.validation?.valid) };
 }
+function dailyTodoSourceActionLabel(sourcesChecked: boolean): string {
+	return sourcesChecked ? '重新检查资料' : '检查资料';
+}
 
 void describe('daily todo view helpers', () => {
 	void it('formats and parses local calendar dates without timezone drift', () => {
@@ -46,6 +49,11 @@ void describe('daily todo view helpers', () => {
 		assert.equal(canGenerateDailyTodo(state), false);
 		state.uploadConfirmed = true;
 		assert.equal(canGenerateDailyTodo(state), true);
+	});
+
+	void it('keeps a visible recheck action after sources have been checked', () => {
+		assert.equal(dailyTodoSourceActionLabel(false), '检查资料');
+		assert.equal(dailyTodoSourceActionLabel(true), '重新检查资料');
 	});
 
 	void it('allows saving only after valid preview validation', () => {

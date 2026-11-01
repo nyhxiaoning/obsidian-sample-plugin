@@ -45,6 +45,10 @@ export function canGenerateDailyTodo(state: Pick<DailyTodoState, 'sourcesChecked
 	return state.sourcesChecked && state.uploadConfirmed && Boolean(state.sources) && (state.sources?.status.every((source) => source.exists) ?? false);
 }
 
+export function dailyTodoSourceActionLabel(sourcesChecked: boolean): string {
+	return sourcesChecked ? zhCN.dailyTodo.recheckSources : zhCN.dailyTodo.checkSources;
+}
+
 export function getDailyTodoSaveGuard(state: Pick<DailyTodoState, 'preview' | 'validation'>): { allowed: boolean; reason?: string } {
 	if (!state.preview.trim()) return { allowed: false, reason: zhCN.dailyTodo.noPlan };
 	if (!state.validation?.valid) return { allowed: false, reason: zhCN.dailyTodo.invalid };
@@ -98,7 +102,7 @@ export class DailyTodoView extends ItemView {
 		});
 
 		const sourceActions = root.createDiv('daily-todo-actions');
-		const checkButton = sourceActions.createEl('button', { text: zhCN.dailyTodo.checkSources });
+		const checkButton = sourceActions.createEl('button', { text: dailyTodoSourceActionLabel(this.state.sourcesChecked) });
 		checkButton.addEventListener('click', () => void this.checkSources(dateInput.value, constraints.value));
 		const confirmation = root.createDiv('daily-todo-field');
 		const confirmationLabel = confirmation.createEl('label');
@@ -124,6 +128,10 @@ export class DailyTodoView extends ItemView {
 		} else sourcesEl.createEl('p', { cls: 'daily-todo-description', text: zhCN.dailyTodo.checkFirst });
 
 		const actionEl = root.createDiv('daily-todo-actions');
+		if (this.state.sourcesChecked) {
+			const recheckButton = actionEl.createEl('button', { text: zhCN.dailyTodo.recheckSources });
+			recheckButton.addEventListener('click', () => void this.checkSources(dateInput.value, constraints.value));
+		}
 		const generateButton = actionEl.createEl('button', { text: this.state.preview ? zhCN.dailyTodo.regenerate : zhCN.dailyTodo.generate });
 		generateButton.addClass('daily-todo-generate-button');
 		generateButton.disabled = !canGenerateDailyTodo(this.state);
